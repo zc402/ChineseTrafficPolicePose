@@ -91,8 +91,8 @@ def fetch_a_sample():
                 .astype(np.uint8)
             # Scale the labels accroding to PH,PW
             for annorect in mpi_sample.annorect_list:
-                annorect.objpos.x = annorect.objpos.x * ZOOM_SCALE
-                annorect.objpos.y = annorect.objpos.y * ZOOM_SCALE
+                annorect.objpos.x *= ZOOM_SCALE
+                annorect.objpos.y *= ZOOM_SCALE
             image_b = image / 255.0 - 0.5  # value ranged from -0.5 ~ 0.5
             yield (mpi_sample, image_b)
     yield None
