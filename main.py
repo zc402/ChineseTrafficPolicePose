@@ -3,7 +3,9 @@ import skimage.io
 import skimage.transform
 import os
 import numpy as np
+import tensorflow as tf
 from random import shuffle
+import nets
 
 MPI_LABEL_PATH = "./dataset/MPI/mpii_human_pose_v1_u12_1/mpii_human_pose_v1_u12_1.mat"
 IMAGE_FOLDER_PATH = "./dataset/MPI/images"
@@ -11,7 +13,7 @@ MAX_EPOCH = 100
 # resize original image
 ZOOM_SCALE = 0.5
 PH, PW = (720 * ZOOM_SCALE, 1080 * ZOOM_SCALE)  # resize from 720,1080
-
+BATCH_SIZE = 20
 
 class MPISample:
     pass
@@ -70,36 +72,37 @@ def load_labels_from_mat():
             # A field was not found in annotation
             err_count += 1
             continue  # skip this image
-    print "Invalid samples: " + err_count  # Total skipped images
+    print "Invalid samples: " + str(err_count)  # Total skipped images
     return mpi_sample_list
 
 
-# Fetch 1 sample from shuffled sample list
-def fetch_a_sample():
+# Fetch samples from shuffled sample list
+def samples_generator():
     mpi_sample_list = load_labels_from_mat()
     # Epoch
     for epoch in range(0, MAX_EPOCH):
         print "Current Epoch: " + str(epoch)
         shuffle(mpi_sample_list)
         # Image
-        for mpi_sample in mpi_sample_list:
-            image_path = skimage.io.imread(os.path.join(IMAGE_FOLDER_PATH, mpi_sample.name))
+        for mpi_label in mpi_sample_list:
+            # Image dir + jpg name
+            image_path = os.path.join(IMAGE_FOLDER_PATH, mpi_label.name)
             # Load image from file TODO: keep file reader open?
             image = skimage.io.imread(image_path)
             image = skimage.transform \
                 .resize(image, [PH, PW], mode='constant', preserve_range=True) \
                 .astype(np.uint8)
             # Scale the labels accroding to PH,PW
-            for annorect in mpi_sample.annorect_list:
+            for annorect in mpi_label.annorect_list:
                 annorect.objpos.x *= ZOOM_SCALE
                 annorect.objpos.y *= ZOOM_SCALE
             image_b = image / 255.0 - 0.5  # value ranged from -0.5 ~ 0.5
-            yield (mpi_sample, image_b)
+            yield (mpi_label, image_b)
     yield None
 
 
 # Compute gaussian map for 1 center
-def gaussian_img(img_height, img_width, c_x, c_y, variance):
+def gaussian_point(img_height, img_width, c_x, c_y, variance):
     gaussian_map = np.zeros((img_height, img_width))
     for x_p in range(img_width):
         for y_p in range(img_height):
@@ -108,6 +111,33 @@ def gaussian_img(img_height, img_width, c_x, c_y, variance):
             exponent = dist_sq / 2.0 / variance / variance
             gaussian_map[y_p, x_p] = np.exp(-exponent)
     return gaussian_map
+
+
+def gaussian_image(img_height, img_width, pos_list):
+    pass
+
+
+def main(argv=None):
+    # Fetch images for a batch
+    batch_images, batch_labels = ([], [])
+    samples_gen = samples_generator()  # Load samples from disk
+    for i in range(0, BATCH_SIZE):
+        la_im = samples_gen.next()  # (label, image)
+        if la_im is None:  # Reached MAX_EPOCH
+            print "Done Training."
+            exit(0)  # End the training
+        else:
+            batch_labels.append(la_im[0])
+            batch_images.append(la_im[1])
+    batch_images = np.asarray(batch_images, np.float32)
+    # Holder tensor for images and labels
+    image_holder = tf.placeholder(tf.float32, shape=[None, PH, PW, 3], name="input_image")
+    person_heatmap_gt = tf.placeholder(tf.float32, shape=[None, PH, PW, 1], name="person_heatmap_gt")
+    print nets.inference_person(batch_images)[-1].get_shape().as_list()
+
+
+if __name__ == "__main__":
+    tf.app.run()
 
 
 exit(0)

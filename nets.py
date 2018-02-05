@@ -1,6 +1,7 @@
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
 def inference_person(image):
+    """Person inference net, return 4 stages for loss computing"""
     with tf.variable_scope('PersonNet'):
         conv1_1 = layers.conv2d(image, 64, 3, activation_fn=tf.nn.relu, scope='conv1_1')
         conv1_2 = layers.conv2d(conv1_1, 64, 3, activation_fn=tf.nn.relu, scope='conv1_2')
@@ -51,3 +52,5 @@ def inference_person(image):
         m_conv5_stage4 = layers.conv2d(m_conv4_stage4, 128, 7, activation_fn=tf.nn.relu, scope='m_conv5_stage4')
         m_conv6_stage4 = layers.conv2d(m_conv5_stage4, 128, 1, activation_fn=tf.nn.relu, scope='m_conv6_stage4')
         m_conv7_stage4 = layers.conv2d(m_conv6_stage4, 1, 1, activation_fn=None, scope='m_conv7_stage4')
+
+        return [conv6_2_cpm, m_conv7_stage2, m_conv7_stage3, m_conv7_stage4]
