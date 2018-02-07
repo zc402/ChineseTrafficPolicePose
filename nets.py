@@ -1,5 +1,7 @@
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
+
+
 def inference_person(image):
     """Person inference net, return 4 stages for loss computing"""
     with tf.variable_scope('PersonNet'):
@@ -54,3 +56,28 @@ def inference_person(image):
         m_conv7_stage4 = layers.conv2d(m_conv6_stage4, 1, 1, activation_fn=None, scope='m_conv7_stage4')
 
         return [conv6_2_cpm, m_conv7_stage2, m_conv7_stage3, m_conv7_stage4]
+
+
+class PersonPredictor:
+    def __init__(self, input_image):
+        self.stage_losses = None
+        self.total_loss = None  # Loss to be optimized
+        self.heatmaps = inference_person(input_image)
+        self.output = self.heatmaps[-1]
+        self.output_shape = self.output.get_shape().as_list()
+        self.loss_summary = None
+
+    def build_loss(self, heatmap_gt):
+        self.stage_losses = []
+        for stage, heatmap in enumerate(self.heatmaps):
+            stage_loss = tf.nn.l2_loss(heatmap - heatmap_gt)
+            self.stage_losses.append(stage_loss)
+            tf.summary.scalar("stage"+str(stage), stage_loss)
+        self.total_loss = tf.reduce_mean(self.stage_losses)
+
+
+def add_gradient_summary(grads):
+    for grad, var in grads:
+        if grad is not None:
+            tf.summary.histogram(var.op.name + "/gradient", grad)
+

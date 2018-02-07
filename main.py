@@ -10,12 +10,16 @@ from random import shuffle
 import nets
 from PIL import Image
 
+FLAGS = tf.flags.FLAGS
+tf.flags.DEFINE_string('mode', 'train', "Mode train/ test")
+
 MPI_LABEL_PATH = "./dataset/MPI/mpii_human_pose_v1_u12_1/mpii_human_pose_v1_u12_1.mat"
 IMAGE_FOLDER_PATH = "./dataset/MPI/images"
 MAX_EPOCH = 100
 # resize original image
 PH, PW = (376, 656)
-BATCH_SIZE = 5
+BATCH_SIZE = 10
+
 
 class MPISample:
     pass
@@ -116,20 +120,19 @@ def samples_generator():
     yield None
 
 
-# Compute gaussian map for 1 center
-def gaussian_point(img_height, img_width, c_x, c_y, variance):
-    gaussian_map = np.zeros([img_height, img_width])
-    for x_p in range(img_width):
-        for y_p in range(img_height):
-            dist_sq = (x_p - c_x) * (x_p - c_x) + \
-                      (y_p - c_y) * (y_p - c_y)
-            exponent = dist_sq / 2.0 / variance / variance
-            gaussian_map[y_p, x_p] = np.exp(-exponent)
-    return gaussian_map
-
-
-# Convert person location x,y to Gaussian peak
 def gaussian_image(img_height, img_width, mpi_sample, scale_h_w):
+    """Convert person location x,y to Gaussian peak"""
+    def gaussian_point(img_h, img_w, c_x, c_y, variance):
+        """Compute gaussian map for 1 center"""
+        gaussian_map = np.zeros([img_h, img_w])
+        for x_p in range(img_w):
+            for y_p in range(img_h):
+                dist_sq = (x_p - c_x) * (x_p - c_x) + \
+                          (y_p - c_y) * (y_p - c_y)
+                exponent = dist_sq / 2.0 / variance / variance
+                gaussian_map[y_p, x_p] = np.exp(-exponent)
+        return gaussian_map
+
     heatmap = np.zeros([img_height, img_width], np.float32)
     for annorect in mpi_sample.annorect_list:
         y = annorect.objpos.y * scale_h_w[0]
@@ -140,43 +143,81 @@ def gaussian_image(img_height, img_width, mpi_sample, scale_h_w):
 
 
 def main(argv=None):
-    # Fetch images for a batch
-    batch_images, batch_labels = ([], [])
-    debug_batch_img_ori = []
-
-    samples_gen = samples_generator()  # Load samples from disk
-    # Construct a batch
-    for i in range(0, BATCH_SIZE):
-        la_im = next(samples_gen)  # (label, image)
-        if la_im is None:  # Reached MAX_EPOCH
-            print("Done Training.")
-            exit(0)  # End the training
-        else:
-            batch_labels.append(la_im[0])
-            batch_images.append(la_im[1])
-            debug_batch_img_ori.append(la_im[2])
-    batch_images = np.asarray(batch_images, np.float32)
     # Holder tensor for images and labels
     image_holder = tf.placeholder(tf.float32, shape=[None, PH, PW, 3], name="input_image")
-    heatmap_gt_holder = tf.placeholder(tf.float32, shape=[None, PH, PW, 1], name="person_heatmap_gt")
-    output_n, output_h, output_w, _ = nets.inference_person(batch_images)[-1].get_shape().as_list()
-    # person location Gaussian heatmap
-    batch_heatmap_gt = []
-    for i in range(0, BATCH_SIZE):
-        heatmap_scale_h = output_h / batch_labels[i].img_h
-        heatmap_scale_w = output_w / batch_labels[i].img_w
+    person_predictor = nets.PersonPredictor(image_holder)  # person inference network
+    # Get output shape
+    output_h, output_w = (person_predictor.output_shape[1], person_predictor.output_shape[2])
+    heatmap_gt_holder = tf.placeholder(tf.float32, shape=[None, output_h, output_w, 1], name="person_heatmap_gt")
+    # Build loss tensor
+    person_predictor.build_loss(heatmap_gt_holder)
+    global_step = tf.Variable(0, trainable=False)
+    sess = tf.Session()
+    saver = tf.train.Saver()
+    ckpt = tf.train.get_checkpoint_state("logs/")
+    if ckpt:
+        saver.restore(sess, ckpt.model_checkpoint_path)
+    optimizer = tf.train.AdamOptimizer()
+    grads = optimizer.compute_gradients(person_predictor.total_loss)
+    # Summary
+    nets.add_gradient_summary(grads)
+    summary_op = tf.summary.merge_all()
+    summary_writer = tf.summary.FileWriter("logs/", sess.graph)
+    train_op = optimizer.apply_gradients(grads, global_step=global_step)
+    # Global initializer
+    sess.run(tf.global_variables_initializer())
+    # Load samples from disk
+    samples_gen = samples_generator()
+    # Start Feeding the network
+    itr = 0
+    while True:
+        itr += 1
+        # Fetch images for a batch
+        batch_images, batch_labels = ([], [])
+        debug_batch_img_ori = []
 
-        heatmap = gaussian_image(output_h, output_w, batch_labels[i], [heatmap_scale_h, heatmap_scale_w])
+        # Construct a batch
+        for i in range(0, BATCH_SIZE):
+            la_im = next(samples_gen)  # (label, image)
+            if la_im is None:  # Reached MAX_EPOCH
+                print("Done Training.")
+                exit(0)  # End the training
+            else:
+                batch_labels.append(la_im[0])
+                batch_images.append(la_im[1])
+                debug_batch_img_ori.append(la_im[2])
 
-        batch_heatmap_gt.append(heatmap)
+        # person location Gaussian heatmap
+        batch_heatmap_gt = []
+        for i in range(0, BATCH_SIZE):
+            heatmap_scale_h = output_h / batch_labels[i].img_h
+            heatmap_scale_w = output_w / batch_labels[i].img_w
 
-        plt.figure(1)
-        plt.subplot(211)
-        plt.imshow(batch_heatmap_gt[i])
-        plt.subplot(212)
-        plt.imshow(debug_batch_img_ori[i])
-        plt.show()
-        print("a")
+            heatmap = gaussian_image(output_h, output_w, batch_labels[i], [heatmap_scale_h, heatmap_scale_w])
+
+            batch_heatmap_gt.append(heatmap)
+
+            # plt.figure(1)
+            # plt.subplot(211)
+            # plt.imshow(batch_heatmap_gt[i])
+            # plt.subplot(212)
+            # plt.imshow(debug_batch_img_ori[i])
+            # plt.show()
+            # print("a")
+
+        batch_heatmap_gt = np.asarray(batch_heatmap_gt, np.float32)[:, :, :, np.newaxis]
+
+        # Feed the network
+        if FLAGS.mode == "train":
+            feed_dict = {image_holder: batch_images, heatmap_gt_holder: batch_heatmap_gt}
+        sess.run(train_op, feed_dict)
+
+        if itr % 200 == 0:
+            train_loss, summary_str = sess.run([person_predictor.total_loss, summary_op], feed_dict=feed_dict)
+            summary_writer.add_summary(summary_str, sess.run(global_step))
+
+        if itr % 1000 == 0:
+            saver.save(sess, "logs/")
 
 
 if __name__ == "__main__":
