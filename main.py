@@ -212,12 +212,15 @@ def main(argv=None):
             feed_dict = {image_holder: batch_images, heatmap_gt_holder: batch_heatmap_gt}
         sess.run(train_op, feed_dict)
 
-        if itr % 200 == 0:
+        if itr % 50 == 0:
             train_loss, summary_str = sess.run([person_predictor.total_loss, summary_op], feed_dict=feed_dict)
             summary_writer.add_summary(summary_str, sess.run(global_step))
 
-        if itr % 1000 == 0:
+        if itr % 200 == 0:
             saver.save(sess, "logs/")
+
+        if itr % 10 == 0:
+            print("iteration: " + str(itr))
 
 
 if __name__ == "__main__":
