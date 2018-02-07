@@ -157,6 +157,9 @@ def main(argv=None):
     ckpt = tf.train.get_checkpoint_state("logs/")
     if ckpt:
         saver.restore(sess, ckpt.model_checkpoint_path)
+    else:
+        # Global initializer
+        sess.run(tf.global_variables_initializer())
     optimizer = tf.train.AdamOptimizer()
     grads = optimizer.compute_gradients(person_predictor.total_loss)
     # Summary
@@ -164,8 +167,7 @@ def main(argv=None):
     summary_op = tf.summary.merge_all()
     summary_writer = tf.summary.FileWriter("logs/", sess.graph)
     train_op = optimizer.apply_gradients(grads, global_step=global_step)
-    # Global initializer
-    sess.run(tf.global_variables_initializer())
+
     # Load samples from disk
     samples_gen = samples_generator()
     # Start Feeding the network
