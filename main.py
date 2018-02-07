@@ -15,7 +15,7 @@ tf.flags.DEFINE_string('mode', 'train', "Mode train/ test")
 
 MPI_LABEL_PATH = "./dataset/MPI/mpii_human_pose_v1_u12_1/mpii_human_pose_v1_u12_1.mat"
 IMAGE_FOLDER_PATH = "./dataset/MPI/images"
-MAX_EPOCH = 100
+MAX_EPOCH = 50
 # resize original image
 PH, PW = (376, 656)
 BATCH_SIZE = 10
@@ -152,7 +152,18 @@ def main(argv=None):
     # Build loss tensor
     person_predictor.build_loss(heatmap_gt_holder)
     global_step = tf.Variable(0, trainable=False)
+
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.005)
+    grads = optimizer.compute_gradients(person_predictor.total_loss)
+    # Session
     sess = tf.Session()
+
+    # Summary
+    nets.add_gradient_summary(grads)
+    summary_op = tf.summary.merge_all()
+    summary_writer = tf.summary.FileWriter("logs/", sess.graph)
+    train_op = optimizer.apply_gradients(grads, global_step=global_step)
+    # Saver
     saver = tf.train.Saver()
     ckpt = tf.train.get_checkpoint_state("logs/")
     if ckpt:
@@ -160,14 +171,6 @@ def main(argv=None):
     else:
         # Global initializer
         sess.run(tf.global_variables_initializer())
-    optimizer = tf.train.AdamOptimizer()
-    grads = optimizer.compute_gradients(person_predictor.total_loss)
-    # Summary
-    nets.add_gradient_summary(grads)
-    summary_op = tf.summary.merge_all()
-    summary_writer = tf.summary.FileWriter("logs/", sess.graph)
-    train_op = optimizer.apply_gradients(grads, global_step=global_step)
-
     # Load samples from disk
     samples_gen = samples_generator()
     # Start Feeding the network
