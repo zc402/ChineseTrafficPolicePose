@@ -110,7 +110,7 @@ def samples_generator():
         for mpi_label in mpi_sample_list:
             # Image dir + jpg name
             image_path = os.path.join(IMAGE_FOLDER_PATH, mpi_label.name)
-            # Load image from file TODO: keep file reader open?
+            # Load image from file
             image_ori = skimage.io.imread(image_path)
             image = skimage.transform \
                 .resize(image_ori, [PH, PW], mode='constant', preserve_range=True) \
@@ -153,17 +153,15 @@ def main(argv=None):
     person_predictor.build_loss(heatmap_gt_holder)
     global_step = tf.Variable(0, trainable=False)
 
-    optimizer = tf.train.AdamOptimizer(learning_rate=0.005)
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.0001)
     grads = optimizer.compute_gradients(person_predictor.total_loss)
-    # Session
-    sess = tf.Session()
 
     # Summary
     nets.add_gradient_summary(grads)
     summary_op = tf.summary.merge_all()
-    summary_writer = tf.summary.FileWriter("logs/", sess.graph)
     train_op = optimizer.apply_gradients(grads, global_step=global_step)
-    # Saver
+    # Session and Saver
+    sess = tf.Session()
     saver = tf.train.Saver()
     ckpt = tf.train.get_checkpoint_state("logs/")
     if ckpt:
@@ -171,12 +169,12 @@ def main(argv=None):
     else:
         # Global initializer
         sess.run(tf.global_variables_initializer())
+    summary_writer = tf.summary.FileWriter("logs/", sess.graph)
     # Load samples from disk
     samples_gen = samples_generator()
     # Start Feeding the network
     itr = 0
     while True:
-        itr += 1
         # Fetch images for a batch
         batch_images, batch_labels = ([], [])
         debug_batch_img_ori = []
@@ -186,6 +184,7 @@ def main(argv=None):
             la_im = next(samples_gen)  # (label, image)
             if la_im is None:  # Reached MAX_EPOCH
                 print("Done Training.")
+                sess.close()
                 exit(0)  # End the training
             else:
                 batch_labels.append(la_im[0])
@@ -222,10 +221,12 @@ def main(argv=None):
             summary_writer.add_summary(summary_str, sess.run(global_step))
 
         if itr % 200 == 0:
-            saver.save(sess, "logs/")
+            saver.save(sess, "logs/ckpt")
 
         if itr % 10 == 0:
             print("iteration: " + str(itr))
+
+        itr += 1
 
 
 if __name__ == "__main__":
