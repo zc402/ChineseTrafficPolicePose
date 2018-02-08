@@ -189,8 +189,8 @@ def main(argv=None):
     else:
         # Global initializer
         sess.run(tf.global_variables_initializer())
-    summary_writer = tf.summary.FileWriter("logs/", sess.graph)
-    img_summary_writer = tf.summary.FileWriter("logs/")
+    summary_writer = tf.summary.FileWriter("logs/summary", sess.graph)
+    img_summary_writer = tf.summary.FileWriter("logs/summary-img")
     # Load samples from disk
     samples_gen = samples_generator()
     test_img_gen = test_img_generator()
