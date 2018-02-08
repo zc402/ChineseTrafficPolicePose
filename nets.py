@@ -60,20 +60,26 @@ def inference_person(image):
 
 class PersonPredictor:
     def __init__(self, input_image):
+        self.input_image = input_image
         self.stage_losses = None
         self.total_loss = None  # Loss to be optimized
         self.heatmaps = inference_person(input_image)
         self.output = self.heatmaps[-1]
         self.output_shape = self.output.get_shape().as_list()
         self.loss_summary = None
+        self.img_summary = None
 
-    def build_loss(self, heatmap_gt):
+    def build_loss(self, heatmap_gt, batch_size):
         self.stage_losses = []
         for stage, heatmap in enumerate(self.heatmaps):
-            stage_loss = tf.nn.l2_loss(heatmap - heatmap_gt)
+            stage_loss = tf.nn.l2_loss(heatmap - heatmap_gt) / batch_size
             self.stage_losses.append(stage_loss)
             tf.summary.scalar("stage"+str(stage), stage_loss)
         self.total_loss = tf.reduce_mean(self.stage_losses)
+
+    def add_train_img_summary(self):
+        tf.summary.image("image_in", self.input_image, 3)
+        tf.summary.image("heatmap_out", self.output, 3)
 
 
 def add_gradient_summary(grads):

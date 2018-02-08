@@ -19,6 +19,7 @@ MAX_EPOCH = 50
 # resize original image
 PH, PW = (376, 656)
 BATCH_SIZE = 10
+LEARNING_RATE = 0.0005
 
 
 class MPISample:
@@ -54,14 +55,13 @@ def load_labels_from_mat():
     release = mat['RELEASE'][0, 0]
     sample_size = release['img_train'].shape[1]
     mpi_sample_list = []
+    mpi_test_list = []
     # imgidx: image idx
     for imgidx in range(0, sample_size):
-        # skip if anno is for testing
-        # if release['img_train'][0,imgidx] == 0: # testing
-        #     continue
+        # mpi_sample: store mat information in python
+        mpi_sample = MPISample()
+
         try:
-            # mpi_sample: store mat information in python
-            mpi_sample = MPISample()
             # anno_image_mat: all annotations of 1 image
             anno_image_mat = release['annolist'][0, imgidx]
             mpi_sample.name = anno_image_mat['image'][0, 0]['name'][0]
@@ -94,7 +94,7 @@ def load_labels_from_mat():
         except:
             # A field was not found in annotation
             err_count += 1
-            # continue  # skip this image
+
     print("Invalid samples: " + str(err_count))  # Total skipped images
     return mpi_sample_list
 
@@ -150,14 +150,15 @@ def main(argv=None):
     output_h, output_w = (person_predictor.output_shape[1], person_predictor.output_shape[2])
     heatmap_gt_holder = tf.placeholder(tf.float32, shape=[None, output_h, output_w, 1], name="person_heatmap_gt")
     # Build loss tensor
-    person_predictor.build_loss(heatmap_gt_holder)
+    person_predictor.build_loss(heatmap_gt_holder, BATCH_SIZE)
     global_step = tf.Variable(0, trainable=False)
 
-    optimizer = tf.train.AdamOptimizer(learning_rate=0.0001)
+    optimizer = tf.train.AdamOptimizer(learning_rate=LEARNING_RATE)
     grads = optimizer.compute_gradients(person_predictor.total_loss)
 
     # Summary
     nets.add_gradient_summary(grads)
+    person_predictor.add_train_img_summary()
     summary_op = tf.summary.merge_all()
     train_op = optimizer.apply_gradients(grads, global_step=global_step)
     # Session and Saver
@@ -216,7 +217,7 @@ def main(argv=None):
             feed_dict = {image_holder: batch_images, heatmap_gt_holder: batch_heatmap_gt}
         sess.run(train_op, feed_dict)
 
-        if itr % 50 == 0:
+        if itr % 200 == 0:
             train_loss, summary_str = sess.run([person_predictor.total_loss, summary_op], feed_dict=feed_dict)
             summary_writer.add_summary(summary_str, sess.run(global_step))
 
