@@ -77,9 +77,11 @@ class PersonPredictor:
             tf.summary.scalar("stage"+str(stage), stage_loss)
         self.total_loss = tf.reduce_mean(self.stage_losses)
 
-    def add_train_img_summary(self):
-        tf.summary.image("image_in", self.input_image, 3)
-        tf.summary.image("heatmap_out", self.output, 3)
+    def add_img_summary(self):
+        tf.summary.image("image_in", self.input_image, 3, collections=["img"])
+        tf.summary.image("heatmap_out", self.output, 3, collections=["img"])
+        img_summary_op = tf.summary.merge_all(key="img")
+        return img_summary_op
 
 
 def add_gradient_summary(grads):

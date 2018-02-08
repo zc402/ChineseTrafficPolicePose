@@ -54,21 +54,24 @@ def load_labels_from_mat():
     mat = scipy.io.loadmat(MPI_LABEL_PATH)
     release = mat['RELEASE'][0, 0]
     sample_size = release['img_train'].shape[1]
-    mpi_sample_list = []
-    mpi_test_list = []
+    train_label_list = []
+    test_label_list = []
     # imgidx: image idx
     for imgidx in range(0, sample_size):
         # mpi_sample: store mat information in python
         mpi_sample = MPISample()
-
+        # anno_image_mat: all annotations of 1 image
+        anno_image_mat = release['annolist'][0, imgidx]
+        mpi_sample.name = anno_image_mat['image'][0, 0]['name'][0]
         try:
-            # anno_image_mat: all annotations of 1 image
-            anno_image_mat = release['annolist'][0, imgidx]
-            mpi_sample.name = anno_image_mat['image'][0, 0]['name'][0]
             # img_h, img_w: height and width of original image
             image_path = os.path.join(IMAGE_FOLDER_PATH, mpi_sample.name)
             ori_img = Image.open(image_path)
             mpi_sample.img_w, mpi_sample.img_h = ori_img.size
+        except FileNotFoundError:
+            continue
+
+        try:
             # annorect_mat: body annotations of 1 image
             annorect_mat = anno_image_mat['annorect']
             mpi_sample.annorect_list = list()
@@ -90,18 +93,34 @@ def load_labels_from_mat():
                 objpos.y = annorect_person_mat['objpos'][0, 0]['y'][0, 0]
                 annorect.objpos = objpos
                 mpi_sample.annorect_list.append(annorect)
-            mpi_sample_list.append(mpi_sample)
+            train_label_list.append(mpi_sample)
         except:
             # A field was not found in annotation
             err_count += 1
+            test_label_list.append(mpi_sample)
 
     print("Invalid samples: " + str(err_count))  # Total skipped images
-    return mpi_sample_list
+    return train_label_list, test_label_list
+
+
+# Load labels for sample generators
+mpi_sample_list, test_label_list = load_labels_from_mat()
+
+
+def test_img_generator():
+    while True:
+        for test_img in test_label_list:
+            image_path = os.path.join(IMAGE_FOLDER_PATH, test_img.name)
+            image_ori = skimage.io.imread(image_path)
+            image = skimage.transform \
+                .resize(image_ori, [PH, PW], mode='constant', preserve_range=True) \
+                .astype(np.uint8)
+            image_b = image / 255.0 - 0.5  # value ranged from -0.5 ~ 0.5
+            yield image_b
 
 
 # Fetch samples from shuffled sample list
 def samples_generator():
-    mpi_sample_list = load_labels_from_mat()
     # Epoch
     for epoch in range(0, MAX_EPOCH):
         print("Current Epoch: " + str(epoch))
@@ -158,7 +177,7 @@ def main(argv=None):
 
     # Summary
     nets.add_gradient_summary(grads)
-    person_predictor.add_train_img_summary()
+    img_summary_op = person_predictor.add_img_summary()
     summary_op = tf.summary.merge_all()
     train_op = optimizer.apply_gradients(grads, global_step=global_step)
     # Session and Saver
@@ -171,8 +190,10 @@ def main(argv=None):
         # Global initializer
         sess.run(tf.global_variables_initializer())
     summary_writer = tf.summary.FileWriter("logs/", sess.graph)
+    img_summary_writer = tf.summary.FileWriter("logs/")
     # Load samples from disk
     samples_gen = samples_generator()
+    test_img_gen = test_img_generator()
     # Start Feeding the network
     itr = 0
     while True:
@@ -220,6 +241,13 @@ def main(argv=None):
         if itr % 200 == 0:
             train_loss, summary_str = sess.run([person_predictor.total_loss, summary_op], feed_dict=feed_dict)
             summary_writer.add_summary(summary_str, sess.run(global_step))
+            # Test images
+            test_img_list = []
+            for i in range(BATCH_SIZE):
+                test_img_list.append(next(test_img_gen))
+            test_feed = {image_holder: test_img_list}
+            summary_img_str = sess.run(img_summary_op, feed_dict=test_feed)
+            img_summary_writer.add_summary(summary_img_str, sess.run(global_step))
 
         if itr % 200 == 0:
             saver.save(sess, "logs/ckpt")
