@@ -41,6 +41,7 @@ def __draw_part_affinity_field(p1, p2, img_shape):
     heatmap = np.zeros(shape=[img_shape[0], img_shape[1], 2])
     p1p2 = p2 - p1
     abs_p1p2 = np.linalg.norm(p1p2)
+    if abs_p1p2 == 0: return heatmap
     unit_vector = p1p2 / abs_p1p2
     pixels = __get_pixels_between_points(p1, p2, img_shape)
     for pixel in pixels:
@@ -232,7 +233,11 @@ def get_gaussian_paf_gt(map_h, map_w, mpi_sample):
         return pcm_paf
 
 
+def prepare_input_images(in_h, in_w, mpi_sample):
+    pass
+
 label, test = load_labels_from_disk()
 for num, mpi_sample in enumerate(label):
     pcm_paf = get_gaussian_paf_gt(47, 82, mpi_sample)
     print(str(num) + " " + mpi_sample.name)
+
