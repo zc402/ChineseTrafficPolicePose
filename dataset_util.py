@@ -10,6 +10,7 @@ import skimage.io
 MPI_LABEL_PATH = "./dataset/MPI/mpii_human_pose_v1_u12_2/mpii_human_pose_v1_u12_1.mat"
 MPI_LABEL_OBJ_PATH = "./dataset/label_obj"
 IMAGE_FOLDER_PATH = "./dataset/MPI/images"
+PAF_FOLDER_PATH = "./dataset/MPI/heatmaps"
 
 
 def __get_pixels_between_points(p1, p2, img_shape, half_line_width=1.0):
@@ -215,17 +216,23 @@ def draw_part_affinity_fields(map_h, map_w, mpi_sample):
     return heatmaps
 
 
+def get_gaussian_paf_gt(map_h, map_w, mpi_sample):
+    file_path = os.path.join(PAF_FOLDER_PATH, mpi_sample.name)
+    # If maps already saved in python object:
+    if os.path.isfile(file_path):
+        with open(file_path, 'rb') as fileInput:
+            pcm_paf = pickle.load(fileInput)
+            return pcm_paf
+    else:  # If maps not saved:
+        PCM = draw_joint_gaussian_heatmaps(map_h, map_w, mpi_sample)  # Part Confidence Maps
+        PAF = draw_part_affinity_fields(map_h, map_w, mpi_sample)
+        pcm_paf = (PCM, PAF)
+        with open(file_path, 'wb') as fileOutput:
+            pickle.dump(pcm_paf, fileOutput, pickle.HIGHEST_PROTOCOL)
+        return pcm_paf
+
+
 label, test = load_labels_from_disk()
-for mpi_sample in label:
-    JHM = draw_joint_gaussian_heatmaps(47, 82, mpi_sample)
-    PAF = draw_part_affinity_fields(47, 82, mpi_sample)
-    plt.figure(0)
-    plt.imshow(JHM[0,:,:])
-    plt.figure(1)
-    plt.imshow(PAF[0,:,:,0])
-    img_path = os.path.join(IMAGE_FOLDER_PATH, mpi_sample.name)
-    img = skimage.io.imread(img_path)
-    plt.figure(2)
-    plt.imshow(img)
-    plt.show()
-    print("a")
+for num, mpi_sample in enumerate(label):
+    pcm_paf = get_gaussian_paf_gt(47, 82, mpi_sample)
+    print(str(num) + " " + mpi_sample.name)
