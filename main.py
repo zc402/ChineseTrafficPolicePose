@@ -12,111 +12,10 @@ from PIL import Image
 
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string('mode', 'train', "Mode train/ test")
-
-MPI_LABEL_PATH = "./dataset/MPI/mpii_human_pose_v1_u12_1/mpii_human_pose_v1_u12_1.mat"
-IMAGE_FOLDER_PATH = "./dataset/MPI/images"
 MAX_EPOCH = 50
-# resize original image
-PH, PW = (376, 656)
+
 BATCH_SIZE = 10
 LEARNING_RATE = 0.0005
-
-
-class MPISample:
-    pass
-
-
-class Annorect:
-    pass
-
-
-class Objpos:
-    pass
-
-
-class Joint:
-    pass
-
-
-"""
-MPISample
-    img_h
-    img_w
-    annorect_list[]
-        Annorect
-            Objpos
-                x 
-                y 
-"""
-# Load all training labels from file
-def load_labels_from_mat():
-    err_count = 0
-    mat = scipy.io.loadmat(MPI_LABEL_PATH)
-    release = mat['RELEASE'][0, 0]
-    sample_size = release['img_train'].shape[1]
-    train_label_list = []
-    test_label_list = []
-    # imgidx: image idx
-    for imgidx in range(0, sample_size):
-        # mpi_sample: store mat information in python
-        mpi_sample = MPISample()
-        # anno_image_mat: all annotations of 1 image
-        anno_image_mat = release['annolist'][0, imgidx]
-        mpi_sample.name = anno_image_mat['image'][0, 0]['name'][0]
-        try:
-            # img_h, img_w: height and width of original image
-            image_path = os.path.join(IMAGE_FOLDER_PATH, mpi_sample.name)
-            ori_img = Image.open(image_path)
-            mpi_sample.img_w, mpi_sample.img_h = ori_img.size
-        except FileNotFoundError:
-            continue
-
-        try:
-            # annorect_mat: body annotations of 1 image
-            annorect_mat = anno_image_mat['annorect']
-            mpi_sample.annorect_list = list()
-            # ridx: person idx in 1 image
-            if annorect_mat.shape[1] == 0:
-                raise ValueError("no person rect annotation")
-            # Skip if no person pos label
-            for ridx in range(0, annorect_mat.shape[1]):
-                annorect_person_mat = annorect_mat[0, ridx]
-                annorect = Annorect()
-                # .x1, .y1, .x2, .y2: coordinates of the head rectangle
-                # annorect.x1 = annorect_person_mat['x1'][0,0]
-                # annorect.y1 = annorect_person_mat['y1'][0,0]
-                # annorect.x2 = annorect_person_mat['x2'][0,0]
-                # annorect.y2 = annorect_person_mat['y2'][0,0]
-                # objpos: rough human position in the image
-                objpos = Objpos()
-                objpos.x = annorect_person_mat['objpos'][0, 0]['x'][0, 0]
-                objpos.y = annorect_person_mat['objpos'][0, 0]['y'][0, 0]
-                annorect.objpos = objpos
-                mpi_sample.annorect_list.append(annorect)
-            train_label_list.append(mpi_sample)
-        except:
-            # A field was not found in annotation
-            err_count += 1
-            test_label_list.append(mpi_sample)
-
-    print("Invalid samples: " + str(err_count))  # Total skipped images
-    return train_label_list, test_label_list
-
-
-# Load labels for sample generators
-mpi_sample_list, test_label_list = load_labels_from_mat()
-
-
-def test_img_generator():
-    while True:
-        for test_img in test_label_list:
-            image_path = os.path.join(IMAGE_FOLDER_PATH, test_img.name)
-            image_ori = skimage.io.imread(image_path)
-            image = skimage.transform \
-                .resize(image_ori, [PH, PW], mode='constant', preserve_range=True) \
-                .astype(np.uint8)
-            image_b = image / 255.0 - 0.5  # value ranged from -0.5 ~ 0.5
-            yield image_b
 
 
 # Fetch samples from shuffled sample list
@@ -137,28 +36,6 @@ def samples_generator():
             image_b = image / 255.0 - 0.5  # value ranged from -0.5 ~ 0.5
             yield (mpi_label, image_b, image_ori)
     yield None
-
-
-def gaussian_image(img_height, img_width, mpi_sample, scale_h_w):
-    """Convert person location x,y to Gaussian peak"""
-    def gaussian_point(img_h, img_w, c_x, c_y, variance):
-        """Compute gaussian map for 1 center"""
-        gaussian_map = np.zeros([img_h, img_w])
-        for x_p in range(img_w):
-            for y_p in range(img_h):
-                dist_sq = (x_p - c_x) * (x_p - c_x) + \
-                          (y_p - c_y) * (y_p - c_y)
-                exponent = dist_sq / 2.0 / variance / variance
-                gaussian_map[y_p, x_p] = np.exp(-exponent)
-        return gaussian_map
-
-    heatmap = np.zeros([img_height, img_width], np.float32)
-    for annorect in mpi_sample.annorect_list:
-        y = annorect.objpos.y * scale_h_w[0]
-        x = annorect.objpos.x * scale_h_w[1]
-        sub_heatmap = gaussian_point(img_height, img_width, x, y, 3)  # Variance
-        heatmap += sub_heatmap
-    return heatmap
 
 
 def main(argv=None):

@@ -6,6 +6,7 @@ import os
 from PIL import Image
 import pickle
 import skimage.io
+import skimage.transform
 
 MPI_LABEL_PATH = "./dataset/MPI/mpii_human_pose_v1_u12_2/mpii_human_pose_v1_u12_1.mat"
 MPI_LABEL_OBJ_PATH = "./dataset/label_obj"
@@ -77,10 +78,10 @@ def load_labels_from_disk():
     mpi_sample_list[]
         mpi_sample
             name
-            img_size(img_w, img_h)
+            img_size(x, y)
             annorect_list[]
                 annorect
-                    objpos(x,y)
+                    objpos(x, y)
                     joint_list[]
                         joint(id, x, y)
     """
@@ -106,7 +107,7 @@ def load_labels_from_disk():
         anno_image_mat = release['annolist'][0, imgidx]
         mpi_sample.name = anno_image_mat['image'][0, 0]['name'][0]
         try:
-            # img_h, img_w: height and width of original image
+            # img_size: (x,y) length of original image
             image_path = os.path.join(IMAGE_FOLDER_PATH, mpi_sample.name)
             ori_img = Image.open(image_path)
             mpi_sample.img_size = ori_img.size
@@ -233,11 +234,67 @@ def get_gaussian_paf_gt(map_h, map_w, mpi_sample):
         return pcm_paf
 
 
-def prepare_input_images(in_h, in_w, mpi_sample):
-    pass
+# Resize original image
+PH, PW = (376, 656)
+IN_H, IN_W = (376, 376)
+IN_HEAT_H, IN_HEAT_W = (47, 47)
+
+
+def prepare_network_input(mpi_sample, pcm_paf):
+    """Prepare input (square) for pose detection"""
+    image_path = os.path.join(IMAGE_FOLDER_PATH, mpi_sample.name)
+    image_ori = skimage.io.imread(image_path)
+    image = skimage.transform \
+        .resize(image_ori, [PH, PW], mode='constant', preserve_range=True) \
+        .astype(np.uint8)
+    image = image / 255.0
+    padded_image = np.pad(image, ((IN_H//2, IN_H//2), (IN_W//2, IN_W//2), (0, 0)), mode='constant', constant_values=0)
+
+    paf_t = np.transpose(pcm_paf[1], [0, 3, 1, 2])
+    paf_r = np.reshape(paf_t, newshape=[paf_t.shape[0] * paf_t.shape[1], paf_t.shape[2], paf_t.shape[3]])
+    # paf_r [5*2, h, w]
+    # 0-5: pcm, 6-15: paf
+    heatmaps = np.concatenate([pcm_paf[0], paf_r], axis=0)
+    padded_maps = np.pad(heatmaps, ((0, 0), (IN_HEAT_H//2, IN_HEAT_H//2), (IN_HEAT_W//2, IN_HEAT_W//2)), mode='constant', constant_values=0)
+
+    scale_in_h = PH / mpi_sample.img_size[1]
+    scale_in_w = PW / mpi_sample.img_size[0]
+    scale_heat_h = heatmaps.shape[1] / mpi_sample.img_size[1]
+    scale_heat_w = heatmaps.shape[2] / mpi_sample.img_size[0]
+
+    img_heat_list = []
+    for annorect in mpi_sample.annorect_list:
+        # Image
+        img_cxy = int(round(annorect.objpos[0] * scale_in_w)) + IN_H//2, int(round(annorect.objpos[1] * scale_in_h)) + IN_W//2
+        assert IN_H % 2 == 0 and IN_W % 2 == 0  # the crop is designed for length which %2==0
+        cropped_img = padded_image[img_cxy[1]-IN_H//2: img_cxy[1]+IN_H//2, img_cxy[0]-IN_W//2: img_cxy[0]+IN_W//2, :]
+        assert cropped_img.shape == (IN_H, IN_W, padded_image.shape[2])
+        # Heatmap
+        heat_cxy = int(round(annorect.objpos[0] * scale_heat_w)) + IN_HEAT_W//2, int(round(annorect.objpos[1] * scale_heat_h)) + IN_HEAT_H//2
+        assert IN_HEAT_H % 2 == 1 and IN_HEAT_W % 2 == 1  # The crop is designed to be so
+        cropped_heat = padded_maps[:, heat_cxy[1]-IN_HEAT_H//2: heat_cxy[1]+IN_HEAT_H//2+1, heat_cxy[0]-IN_HEAT_W//2: heat_cxy[0]+IN_HEAT_W//2+1]
+        assert cropped_heat.shape == (padded_maps.shape[0], IN_HEAT_H, IN_HEAT_W)
+        img_heat_list.append((cropped_img, cropped_heat))
+
+    return img_heat_list
+
+
+def image_augment(img, pcm_paf):
+    """Random augmentation"""
+
+
 
 label, test = load_labels_from_disk()
 for num, mpi_sample in enumerate(label):
     pcm_paf = get_gaussian_paf_gt(47, 82, mpi_sample)
-    print(str(num) + " " + mpi_sample.name)
+    img_heat_list = prepare_network_input(mpi_sample, pcm_paf)
+    #plt.figure(1)
+    #plt.subplot(221)
+    #plt.imshow(img_heat_list[0][0])
+    #plt.subplot(222)
+    #plt.imshow(img_heat_list[0][1][0,:,:])
+    #plt.subplot(223)
+    #plt.imshow(img_heat_list[0][1][6,:,:])
+    #print(str(num) + " " + mpi_sample.name)
+    #plt.show()
 
