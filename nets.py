@@ -1,5 +1,108 @@
 import tensorflow as tf
 import tensorflow.contrib.layers as layers
+import vgg19_trainable as vgg19
+
+
+class PoseNet:
+    def __init__(self):
+        self.VGG_PARAM_PATH = "vgg19.npy"
+        self.layer_dict = {}
+        self.next_layer_input = None  # Input for next self.conv()
+
+    def feed(self, feed_name):
+        try:
+            feed_layer = self.layer_dict[feed_name]
+        except KeyError:
+            raise KeyError('Unknown layer name fed: %s' % feed_name)
+        self.next_layer_input = feed_layer
+        return self
+
+    def concat(self, name_list, name):
+        val = []
+        try:
+            for name in name_list:
+                val.append(self.layer_dict[name])
+        except KeyError:
+            raise KeyError('Unknown layer name fed: %s' % name)
+        c = tf.concat(values=val, axis=3, name=name)
+        self.layer_dict[name] = c
+        self.next_layer_input = c
+        return self
+
+    def conv(self, filters, kernel_size, name, relu=True):
+        if relu:
+            c = layers.conv2d(self.next_layer_input, filters, kernel_size, activation_fn=tf.nn.relu, scope=name)
+        else:
+            c = layers.conv2d(self.next_layer_input, filters, kernel_size, activation_fn=None, scope=name)
+        self.layer_dict[name] = c
+        self.next_layer_input = c
+        return self
+
+    def vgg_10(self, image_input, trainable=False):
+        vgg_10_layers = vgg19.Vgg10(self.VGG_PARAM_PATH, trainable)
+        vgg_10_out = vgg_10_layers.build(image_input)
+        return vgg_10_out
+
+    def inference_pose(self, conv_4_2):
+        self.layer_dict['conv_4_2'] = conv_4_2
+        (self.feed('conv_4_2')
+             .conv(256, 3, 'conv_4_3_cpm')
+             .conv(128, 3, 'conv_4_4_cpm')
+
+             .conv(128, 3, 'conv_5_1_cpm_l1')
+             .conv(128, 3, 'conv_5_2_cpm_l1')
+             .conv(128, 3, 'conv_5_3_cpm_l1')
+             .conv(512, 1, 'conv_5_4_cpm_l1')
+             .conv(5*2, 1, 'conv_5_5_cpm_l1', relu=False))
+
+        (self.feed('conv_4_4_cpm')
+             .conv(128, 3, 'conv_5_1_cpm_l2')
+             .conv(128, 3, 'conv_5_2_cpm_l2')
+             .conv(128, 3, 'conv_5_3_cpm_l2')
+             .conv(512, 1, 'conv_5_4_cpm_l2')
+             .conv(6, 1, 'conv_5_5_cpm_l2', relu=False))
+
+        (self.concat(['conv_5_5_cpm_l1', 'conv_5_5_cpm_l2', 'conv_4_4_cpm'], 'concat_stage2')
+             .conv(128, 7, 'mconv1_stage2_l1')
+             .conv(128, 7, 'mconv2_stage2_l1')
+             .conv(128, 7, 'mconv3_stage2_l1')
+             .conv(128, 7, 'mconv4_stage2_l1')
+             .conv(128, 1, 'mconv5_stage2_l1')
+             .conv(5*2, 1, 'mconv6_stage2_l1', relu=False))
+
+        (self.feed('concat_stage2')
+             .conv(128, 7, 'mconv1_stage2_l2')
+             .conv(128, 7, 'mconv2_stage2_l2')
+             .conv(128, 7, 'mconv3_stage2_l2')
+             .conv(128, 7, 'mconv4_stage2_l2')
+             .conv(128, 1, 'mconv5_stage2_l2')
+             .conv(6, 1, 'mconv6_stage2_l2', relu=False)
+         )
+
+    def loss_l1_l2(self, batch_pcm_paf):
+        batch_size = batch_pcm_paf.shape[0]
+        pcm_gt, paf_gt = batch_pcm_paf[:, :6, :, :], batch_pcm_paf[:, 6:, :, :]
+        l1s = [self.layer_dict['conv_5_5_cpm_l1']]
+        l2s = [self.layer_dict['conv_5_5_cpm_l2']]
+        l1s_loss, l2s_loss = [], []
+        for layer_name in self.layer_dict.keys():
+            if 'mconv6' in layer_name and '_l1' in layer_name:
+                l1s.append(self.layer_dict[layer_name])
+            if 'mconv6' in layer_name and '_l2' in layer_name:
+                l2s.append(self.layer_dict[layer_name])
+        for i, l1 in enumerate(l1s):
+            loss = tf.nn.l2_loss(l1 - paf_gt) / batch_size
+            tf.summary.scalar(name='l1_stage'+str(i+1), tensor=loss)
+            l1s_loss.append(loss)
+        for i, l2 in enumerate(l2s):
+            loss = tf.nn.l2_loss(l2 - pcm_gt) / batch_size
+            tf.summary.scalar(name='l2_stage'+str(i+1), tensor=loss)
+            l2s_loss.append(loss)
+        total_l1_loss = tf.reduce_mean(l1s_loss)
+        total_l2_loss = tf.reduce_mean(l2s_loss)
+        total_loss = tf.reduce_mean([total_l1_loss, total_l2_loss])
+        tf.summary.scalar(name='total_loss', tensor=total_loss)
+        return total_loss
 
 
 def inference_person(image):
