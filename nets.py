@@ -17,15 +17,15 @@ class PoseNet:
         self.next_layer_input = feed_layer
         return self
 
-    def concat(self, name_list, name):
+    def concat(self, concat_list, concat_layer_name):
         val = []
-        try:
-            for name in name_list:
-                val.append(self.layer_dict[name])
-        except KeyError:
-            raise KeyError('Unknown layer name fed: %s' % name)
-        c = tf.concat(values=val, axis=3, name=name)
-        self.layer_dict[name] = c
+        for concat_name in concat_list:
+            try:
+                val.append(self.layer_dict[concat_name])
+            except KeyError:
+                raise KeyError('Unknown layer name fed: %s' % concat_name)
+        c = tf.concat(values=val, axis=3, name=concat_layer_name)
+        self.layer_dict[concat_layer_name] = c
         self.next_layer_input = c
         return self
 
@@ -79,9 +79,13 @@ class PoseNet:
              .conv(6, 1, 'mconv6_stage2_l2', relu=False)
          )
 
-    def loss_l1_l2(self, batch_pcm_paf):
-        batch_size = batch_pcm_paf.shape[0]
-        pcm_gt, paf_gt = batch_pcm_paf[:, :6, :, :], batch_pcm_paf[:, 6:, :, :]
+    def loss_l1_l2(self, batch_pcm, batch_paf, batch_size):
+        """
+        Build loss of network
+        :param batch_pcm: [None, H, W, 6]
+        :param batch_paf: [None, H, W, 10]
+        :return:
+        """
         l1s = [self.layer_dict['conv_5_5_cpm_l1']]
         l2s = [self.layer_dict['conv_5_5_cpm_l2']]
         l1s_loss, l2s_loss = [], []
@@ -91,11 +95,11 @@ class PoseNet:
             if 'mconv6' in layer_name and '_l2' in layer_name:
                 l2s.append(self.layer_dict[layer_name])
         for i, l1 in enumerate(l1s):
-            loss = tf.nn.l2_loss(l1 - paf_gt) / batch_size
+            loss = tf.nn.l2_loss(l1 - batch_paf) / batch_size
             tf.summary.scalar(name='l1_stage'+str(i+1), tensor=loss)
             l1s_loss.append(loss)
         for i, l2 in enumerate(l2s):
-            loss = tf.nn.l2_loss(l2 - pcm_gt) / batch_size
+            loss = tf.nn.l2_loss(l2 - batch_pcm) / batch_size
             tf.summary.scalar(name='l2_stage'+str(i+1), tensor=loss)
             l2s_loss.append(loss)
         total_l1_loss = tf.reduce_mean(l1s_loss)
