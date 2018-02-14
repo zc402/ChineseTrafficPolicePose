@@ -9,9 +9,9 @@ import skimage.io
 import skimage.transform
 
 MPI_LABEL_PATH = "./dataset/MPI/mpii_human_pose_v1_u12_2/mpii_human_pose_v1_u12_1.mat"
-MPI_LABEL_OBJ_PATH = "./dataset/label_obj"
+MPI_LABEL_OBJ_PATH = "./dataset/gen/label_obj"
 IMAGE_FOLDER_PATH = "./dataset/MPI/images"
-PAF_FOLDER_PATH = "./dataset/MPI/heatmaps"
+PAF_FOLDER_PATH = "./dataset/gen/heatmaps"
 
 
 def __get_pixels_between_points(p1, p2, img_shape, half_line_width=1.0):
@@ -237,11 +237,13 @@ def get_gaussian_paf_gt(map_h, map_w, mpi_sample):
 # Resize original image
 PH, PW = (376, 656)
 IN_H, IN_W = (376, 376)
+HEAT_H, HEAT_W = (47, 82)
 IN_HEAT_H, IN_HEAT_W = (47, 47)
 
 
 def prepare_network_input(mpi_sample, pcm_paf):
     """Prepare input (square) for pose detection"""
+
     image_path = os.path.join(IMAGE_FOLDER_PATH, mpi_sample.name)
     image_ori = skimage.io.imread(image_path)
     image = skimage.transform \
@@ -279,22 +281,9 @@ def prepare_network_input(mpi_sample, pcm_paf):
     return img_heat_list
 
 
-def image_augment(img, pcm_paf):
+def image_augment(img_heat_list, pcm_paf):
     """Random augmentation"""
+    pass
 
 
-
-label, test = load_labels_from_disk()
-for num, mpi_sample in enumerate(label):
-    pcm_paf = get_gaussian_paf_gt(47, 82, mpi_sample)
-    img_heat_list = prepare_network_input(mpi_sample, pcm_paf)
-    #plt.figure(1)
-    #plt.subplot(221)
-    #plt.imshow(img_heat_list[0][0])
-    #plt.subplot(222)
-    #plt.imshow(img_heat_list[0][1][0,:,:])
-    #plt.subplot(223)
-    #plt.imshow(img_heat_list[0][1][6,:,:])
-    #print(str(num) + " " + mpi_sample.name)
-    #plt.show()
 

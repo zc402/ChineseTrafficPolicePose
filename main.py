@@ -9,6 +9,7 @@ import tensorflow as tf
 from random import shuffle
 import nets
 from PIL import Image
+import dataset_util as du
 
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string('mode', 'train', "Mode train/ test")
@@ -20,21 +21,18 @@ LEARNING_RATE = 0.0005
 
 # Fetch samples from shuffled sample list
 def samples_generator():
-    # Epoch
+
+    label_list, test = du.load_labels_from_disk()
     for epoch in range(0, MAX_EPOCH):
         print("Current Epoch: " + str(epoch))
-        shuffle(mpi_sample_list)
-        # Single image
-        for mpi_label in mpi_sample_list:
-            # Image dir + jpg name
-            image_path = os.path.join(IMAGE_FOLDER_PATH, mpi_label.name)
-            # Load image from file
-            image_ori = skimage.io.imread(image_path)
-            image = skimage.transform \
-                .resize(image_ori, [PH, PW], mode='constant', preserve_range=True) \
-                .astype(np.uint8)
-            image_b = image / 255.0 - 0.5  # value ranged from -0.5 ~ 0.5
-            yield (mpi_label, image_b, image_ori)
+        shuffle(label_list)
+        # Process single image
+        for num, mpi_sample in enumerate(label_list):
+            pcm_paf = du.get_gaussian_paf_gt(du.HEAT_H, du.HEAT_W, mpi_sample)
+            img_heat_list = du.prepare_network_input(mpi_sample, pcm_paf)
+            # Process single person
+            for img_heat in img_heat_list:
+                yield(img_heat)
     yield None
 
 
