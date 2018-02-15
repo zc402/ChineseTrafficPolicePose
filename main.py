@@ -15,8 +15,8 @@ FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string('mode', 'train', "Mode train/ test")
 MAX_EPOCH = 50
 
-BATCH_SIZE = 10
-LEARNING_RATE = 0.0005
+BATCH_SIZE = 50
+LEARNING_RATE = 0.0002
 log_dict = {}
 
 
@@ -94,11 +94,11 @@ def main(argv=None):
 
         # Feed the network
         # if FLAGS.mode == "train":
-
+        print("GPU")
         feed_dict = {image_holder: batch_images, pcm_holder: batch_pcm, paf_holder: batch_paf}
         sess.run(train_op, feed_dict)
 
-        if itr % 5 == 0:
+        if itr % 200 == 0:
             train_loss, summary_str = sess.run([total_loss, summary_op], feed_dict=feed_dict)
             summary_writer.add_summary(summary_str, sess.run(global_step))
             # Test images
@@ -109,7 +109,7 @@ def main(argv=None):
             # summary_img_str = sess.run(img_summary_op, feed_dict=test_feed)
             # img_summary_writer.add_summary(summary_img_str, sess.run(global_step))
 
-        if itr % 5 == 0:
+        if itr % 200 == 0:
             saver.save(sess, "logs/ckpt")
 
         log_dict['itr'] = itr

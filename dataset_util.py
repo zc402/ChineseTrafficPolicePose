@@ -3,6 +3,7 @@ import scipy
 import matplotlib.pyplot as plt
 import scipy.io
 import os
+import os.path
 from PIL import Image
 import pickle
 import skimage.io
@@ -11,6 +12,7 @@ import skimage.transform
 MPI_LABEL_PATH = "./dataset/MPI/mpii_human_pose_v1_u12_2/mpii_human_pose_v1_u12_1.mat"
 MPI_LABEL_OBJ_PATH = "./dataset/gen/label_obj"
 IMAGE_FOLDER_PATH = "./dataset/MPI/images"
+RESIZE_IMAGE_FOLDER_PATH = "./dataset/MPI/resize_images"
 PAF_FOLDER_PATH = "./dataset/gen/heatmaps"
 
 
@@ -284,6 +286,19 @@ def prepare_network_input(mpi_sample, pcm_paf):
 def image_augment(img_heat_list, pcm_paf):
     """Random augmentation"""
     pass
+
+
+def resize_imgs():
+    t_labels, _ = load_labels_from_disk()
+    for t_label in t_labels:
+        name = t_label.name
+        file = os.path.join(IMAGE_FOLDER_PATH, name)
+        image_ori = skimage.io.imread(file)
+        image = skimage.transform \
+            .resize(image_ori, [PH, PW], mode='constant', preserve_range=True)
+        out_path = os.path.join(RESIZE_IMAGE_FOLDER_PATH, name)
+        skimage.io.imsave(out_path, image)
+        print(name)
 
 
 
