@@ -12,7 +12,7 @@ import skimage.transform
 MPI_LABEL_PATH = "./dataset/MPI/mpii_human_pose_v1_u12_2/mpii_human_pose_v1_u12_1.mat"
 MPI_LABEL_OBJ_PATH = "./dataset/gen/label_obj"
 IMAGE_FOLDER_PATH = "./dataset/MPI/images"
-RESIZE_IMAGE_FOLDER_PATH = "./dataset/MPI/resize_images"
+RESIZED_IMAGE_FOLDER_PATH = "./dataset/MPI/resized_images"
 PAF_FOLDER_PATH = "./dataset/gen/heatmaps"
 
 
@@ -290,15 +290,14 @@ def image_augment(img_heat_list, pcm_paf):
 
 def resize_imgs():
     t_labels, _ = load_labels_from_disk()
-    for t_label in t_labels:
+    for i, t_label in enumerate(t_labels):
         name = t_label.name
         file = os.path.join(IMAGE_FOLDER_PATH, name)
-        image_ori = skimage.io.imread(file)
-        image = skimage.transform \
-            .resize(image_ori, [PH, PW], mode='constant', preserve_range=True)
-        out_path = os.path.join(RESIZE_IMAGE_FOLDER_PATH, name)
-        skimage.io.imsave(out_path, image)
-        print(name)
+        im = Image.open(file)
+        re_im = im.resize((PW, PH), Image.ANTIALIAS)
+        out_path = os.path.join(RESIZED_IMAGE_FOLDER_PATH, name)
+        re_im.save(out_path)
+        print(str(i) + ' ' + name)
 
 
 
