@@ -16,7 +16,7 @@ tf.flags.DEFINE_string('mode', 'train', "Mode train/ test")
 MAX_EPOCH = 50
 
 BATCH_SIZE = 50
-LEARNING_RATE = 0.0002
+LEARNING_RATE = 0.00001
 log_dict = {}
 
 
@@ -54,13 +54,15 @@ def main(argv=None):
     total_loss = pose_net.loss_l1_l2(pcm_holder, paf_holder, BATCH_SIZE)
 
     global_step = tf.Variable(0, trainable=False)
-    optimizer = tf.train.AdamOptimizer(learning_rate=LEARNING_RATE)
+    decaying_learning_rate = tf.train.exponential_decay(LEARNING_RATE, global_step,
+                                           10000, 0.96, staircase=True)
+    optimizer = tf.train.AdamOptimizer(learning_rate=decaying_learning_rate)
     grads = optimizer.compute_gradients(total_loss)
 
     # Summary
     nets.add_gradient_summary(grads)
-    # img_summary_op = person_predictor.add_img_summary()
     summary_op = tf.summary.merge_all()
+
     train_op = optimizer.apply_gradients(grads, global_step=global_step)
     # Session and Saver
     sess = tf.Session()
