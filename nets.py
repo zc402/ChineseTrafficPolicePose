@@ -39,6 +39,7 @@ class PoseNet:
         return self
 
     def vgg_10(self, image_input, trainable=False):
+        self.layer_dict['image'] = image_input
         vgg_10_layers = vgg19.Vgg10(self.VGG_PARAM_PATH, trainable)
         vgg_10_out = vgg_10_layers.build(image_input)
         return vgg_10_out
@@ -79,6 +80,54 @@ class PoseNet:
              .conv(6, 1, 'mconv6_stage2_l2', relu=False)
          )
 
+        (self.concat(['mconv6_stage2_l1', 'mconv6_stage2_l2', 'conv_4_4_cpm'], 'concat_stage3')
+             .conv(128, 7, 'mconv1_stage3_l1')
+             .conv(128, 7, 'mconv2_stage3_l1')
+             .conv(128, 7, 'mconv3_stage3_l1')
+             .conv(128, 7, 'mconv4_stage3_l1')
+             .conv(128, 1, 'mconv5_stage3_l1')
+             .conv(5 * 2, 1, 'mconv6_stage3_l1', relu=False))
+        (self.feed('concat_stage3')
+             .conv(128, 7, 'mconv1_stage3_l2')
+             .conv(128, 7, 'mconv2_stage3_l2')
+             .conv(128, 7, 'mconv3_stage3_l2')
+             .conv(128, 7, 'mconv4_stage3_l2')
+             .conv(128, 1, 'mconv5_stage3_l2')
+             .conv(6, 1, 'mconv6_stage3_l2', relu=False)
+         )
+
+        (self.concat(['mconv6_stage3_l1', 'mconv6_stage3_l2', 'conv_4_4_cpm'], 'concat_stage4')
+             .conv(128, 7, 'mconv1_stage4_l1')
+             .conv(128, 7, 'mconv2_stage4_l1')
+             .conv(128, 7, 'mconv3_stage4_l1')
+             .conv(128, 7, 'mconv4_stage4_l1')
+             .conv(128, 1, 'mconv5_stage4_l1')
+             .conv(5 * 2, 1, 'mconv6_stage4_l1', relu=False))
+        (self.feed('concat_stage4')
+             .conv(128, 7, 'mconv1_stage4_l2')
+             .conv(128, 7, 'mconv2_stage4_l2')
+             .conv(128, 7, 'mconv3_stage4_l2')
+             .conv(128, 7, 'mconv4_stage4_l2')
+             .conv(128, 1, 'mconv5_stage4_l2')
+             .conv(6, 1, 'mconv6_stage4_l2', relu=False)
+         )
+
+        (self.concat(['mconv6_stage4_l1', 'mconv6_stage4_l2', 'conv_4_4_cpm'], 'concat_stage5')
+             .conv(128, 7, 'mconv1_stage5_l1')
+             .conv(128, 7, 'mconv2_stage5_l1')
+             .conv(128, 7, 'mconv3_stage5_l1')
+             .conv(128, 7, 'mconv4_stage5_l1')
+             .conv(128, 1, 'mconv5_stage5_l1')
+             .conv(5 * 2, 1, 'mconv6_stage5_l1', relu=False))
+        (self.feed('concat_stage5')
+             .conv(128, 7, 'mconv1_stage5_l2')
+             .conv(128, 7, 'mconv2_stage5_l2')
+             .conv(128, 7, 'mconv3_stage5_l2')
+             .conv(128, 7, 'mconv4_stage5_l2')
+             .conv(128, 1, 'mconv5_stage5_l2')
+             .conv(6, 1, 'mconv6_stage5_l2', relu=False)
+         )
+
     def loss_l1_l2(self, batch_pcm, batch_paf, batch_size):
         """
         Build loss of network
@@ -86,6 +135,8 @@ class PoseNet:
         :param batch_paf: [None, H, W, 10]
         :return:
         """
+        self.layer_dict['pcm_gt'] = batch_pcm
+        self.layer_dict['paf_gt'] = batch_paf
         l1s = [self.layer_dict['conv_5_5_cpm_l1']]
         l2s = [self.layer_dict['conv_5_5_cpm_l2']]
         l1s_loss, l2s_loss = [], []
@@ -107,6 +158,13 @@ class PoseNet:
         total_loss = tf.reduce_mean([total_l1_loss, total_l2_loss])
         tf.summary.scalar(name='total_loss', tensor=total_loss)
         return total_loss
+
+    def add_image_summary(self):
+        tf.summary.image("S2L1-0", tf.expand_dims(self.layer_dict['mconv6_stage5_l1'][:, :, :, 0], axis=-1))
+        tf.summary.image("S2L2-0", tf.expand_dims(self.layer_dict['mconv6_stage5_l2'][:, :, :, 0], axis=-1))
+        tf.summary.image("IMAGE", self.layer_dict['image'])
+        tf.summary.image("L1-GT", tf.expand_dims(self.layer_dict['paf_gt'][:, :, :, 0], axis=-1))
+        tf.summary.image("L2-GT", tf.expand_dims(self.layer_dict['pcm_gt'][:, :, :, 0], axis=-1))
 
 
 def inference_person(image):

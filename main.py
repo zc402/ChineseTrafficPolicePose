@@ -13,10 +13,10 @@ import dataset_util as du
 
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string('mode', 'train', "Mode train/ test")
-MAX_EPOCH = 50
+MAX_EPOCH = 200
 
-BATCH_SIZE = 50
-LEARNING_RATE = 0.00001
+BATCH_SIZE = 30
+LEARNING_RATE = 0.00008
 log_dict = {}
 
 
@@ -48,7 +48,7 @@ def main(argv=None):
     paf_holder = tf.placeholder(tf.float32, shape=[None, du.IN_HEAT_H, du.IN_HEAT_W, 10], name='paf_holder')
     # Build netowrk
     pose_net = nets.PoseNet()
-    conv_4_2 = pose_net.vgg_10(image_holder, trainable=False)
+    conv_4_2 = pose_net.vgg_10(image_holder, trainable=True)
     pose_net.inference_pose(conv_4_2)
     # Build loss tensor
     total_loss = pose_net.loss_l1_l2(pcm_holder, paf_holder, BATCH_SIZE)
@@ -60,6 +60,7 @@ def main(argv=None):
     grads = optimizer.compute_gradients(total_loss)
 
     # Summary
+    pose_net.add_image_summary()
     nets.add_gradient_summary(grads)
     summary_op = tf.summary.merge_all()
 
@@ -78,7 +79,7 @@ def main(argv=None):
     # Load samples from disk
     samples_gen = samples_generator()
     # Start Feeding the network
-    itr = 0
+    itr = 1
     while True:
         # Fetch images for a batch
         batch_images, batch_pcm, batch_paf = ([], [], [])
@@ -103,7 +104,7 @@ def main(argv=None):
         feed_dict = {image_holder: batch_images, pcm_holder: batch_pcm, paf_holder: batch_paf}
         sess.run(train_op, feed_dict)
 
-        if itr % 200 == 0:
+        if itr % 100 == 0:
             train_loss, summary_str = sess.run([total_loss, summary_op], feed_dict=feed_dict)
             summary_writer.add_summary(summary_str, sess.run(global_step))
             # Test images
@@ -114,7 +115,6 @@ def main(argv=None):
             # summary_img_str = sess.run(img_summary_op, feed_dict=test_feed)
             # img_summary_writer.add_summary(summary_img_str, sess.run(global_step))
 
-        if itr % 200 == 0:
             saver.save(sess, "logs/ckpt")
 
         log_dict['itr'] = itr
