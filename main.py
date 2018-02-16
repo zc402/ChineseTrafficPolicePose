@@ -16,7 +16,7 @@ tf.flags.DEFINE_string('mode', 'train', "Mode train/ test")
 MAX_EPOCH = 200
 
 BATCH_SIZE = 30
-LEARNING_RATE = 0.00008
+LEARNING_RATE = 0.00006
 log_dict = {}
 
 
@@ -55,7 +55,7 @@ def main(argv=None):
 
     global_step = tf.Variable(0, trainable=False)
     decaying_learning_rate = tf.train.exponential_decay(LEARNING_RATE, global_step,
-                                           10000, 0.96, staircase=True)
+                                           10000, 0.92, staircase=True)
     optimizer = tf.train.AdamOptimizer(learning_rate=decaying_learning_rate)
     grads = optimizer.compute_gradients(total_loss)
 
@@ -100,13 +100,15 @@ def main(argv=None):
 
         # Feed the network
         # if FLAGS.mode == "train":
-        print("GPU")
         feed_dict = {image_holder: batch_images, pcm_holder: batch_pcm, paf_holder: batch_paf}
-        sess.run(train_op, feed_dict)
+        _, total_loss_num, global_step_num, learning_rate_num = sess.run([train_op, total_loss, global_step, decaying_learning_rate], feed_dict)
+        log_dict['Loss'] = total_loss_num
+        log_dict['Step'] = global_step_num
+        log_dict['Learning Rate'] = learning_rate_num
 
         if itr % 100 == 0:
-            train_loss, summary_str = sess.run([total_loss, summary_op], feed_dict=feed_dict)
-            summary_writer.add_summary(summary_str, sess.run(global_step))
+            summary_str = sess.run(summary_op, feed_dict=feed_dict)
+            summary_writer.add_summary(summary_str, global_step_num)
             # Test images
             # test_img_list = []
             # for i in range(BATCH_SIZE):
@@ -117,9 +119,9 @@ def main(argv=None):
 
             saver.save(sess, "logs/ckpt")
 
-        log_dict['itr'] = itr
+        # log_dict['itr'] = itr
 
-        if itr % 1 == 0:
+        if itr % 5 == 0:
             print(log_dict)
 
         itr += 1
