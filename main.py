@@ -30,8 +30,11 @@ def samples_generator():
         shuffle(label_list)
         # Process single image
         for num, mpi_sample in enumerate(label_list):
-            pcm_paf = du.get_gaussian_paf_gt(du.HEAT_H, du.HEAT_W, mpi_sample)
-            img_heat_list = du.prepare_network_input(mpi_sample, pcm_paf)
+            try:
+                pcm_paf = du.get_gaussian_paf_gt(du.HEAT_H, du.HEAT_W, mpi_sample)
+                img_heat_list = du.prepare_network_input(mpi_sample, pcm_paf)
+            except AssertionError:
+                continue  # Skip corrupted files and annotations
             # Process single person
             for img_heat in img_heat_list:
                 yield(img_heat)

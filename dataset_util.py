@@ -12,7 +12,7 @@ import skimage.transform
 MPI_LABEL_PATH = "./dataset/MPI/mpii_human_pose_v1_u12_2/mpii_human_pose_v1_u12_1.mat"
 MPI_LABEL_OBJ_PATH = "./dataset/gen/label_obj"
 IMAGE_FOLDER_PATH = "./dataset/MPI/images"
-RESIZED_IMAGE_FOLDER_PATH = "./dataset/MPI/resized_images"
+RESIZED_IMAGE_FOLDER_PATH = "./dataset/gen/resized_images"
 PAF_FOLDER_PATH = "./dataset/gen/heatmaps"
 
 
@@ -246,12 +246,9 @@ IN_HEAT_H, IN_HEAT_W = (47, 47)
 def prepare_network_input(mpi_sample, pcm_paf):
     """Prepare input (square) for pose detection"""
 
-    image_path = os.path.join(IMAGE_FOLDER_PATH, mpi_sample.name)
-    image_ori = skimage.io.imread(image_path)
-    image = skimage.transform \
-        .resize(image_ori, [PH, PW], mode='constant', preserve_range=True) \
-        .astype(np.uint8)
-    image = image / 255.0
+    resized_image_path = os.path.join(RESIZED_IMAGE_FOLDER_PATH, mpi_sample.name)
+    image_re = skimage.io.imread(resized_image_path)
+    image = image_re / 255.0
     padded_image = np.pad(image, ((IN_H//2, IN_H//2), (IN_W//2, IN_W//2), (0, 0)), mode='constant', constant_values=0)
 
     paf_t = np.transpose(pcm_paf[1], [0, 3, 1, 2])
@@ -272,6 +269,8 @@ def prepare_network_input(mpi_sample, pcm_paf):
         img_cxy = int(round(annorect.objpos[0] * scale_in_w)) + IN_H//2, int(round(annorect.objpos[1] * scale_in_h)) + IN_W//2
         assert IN_H % 2 == 0 and IN_W % 2 == 0  # the crop is designed for length which %2==0
         cropped_img = padded_image[img_cxy[1]-IN_H//2: img_cxy[1]+IN_H//2, img_cxy[0]-IN_W//2: img_cxy[0]+IN_W//2, :]
+        if cropped_img.shape == (IN_H, IN_W, padded_image.shape[2]):
+            pass
         assert cropped_img.shape == (IN_H, IN_W, padded_image.shape[2])
         # Heatmap
         heat_cxy = int(round(annorect.objpos[0] * scale_heat_w)) + IN_HEAT_W//2, int(round(annorect.objpos[1] * scale_heat_h)) + IN_HEAT_H//2
