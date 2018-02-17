@@ -1,5 +1,6 @@
 import numpy as np
 import scipy
+import scipy.ndimage.interpolation
 import matplotlib.pyplot as plt
 import scipy.io
 import os
@@ -269,8 +270,6 @@ def prepare_network_input(mpi_sample, pcm_paf):
         img_cxy = int(round(annorect.objpos[0] * scale_in_w)) + IN_H//2, int(round(annorect.objpos[1] * scale_in_h)) + IN_W//2
         assert IN_H % 2 == 0 and IN_W % 2 == 0  # the crop is designed for length which %2==0
         cropped_img = padded_image[img_cxy[1]-IN_H//2: img_cxy[1]+IN_H//2, img_cxy[0]-IN_W//2: img_cxy[0]+IN_W//2, :]
-        if cropped_img.shape == (IN_H, IN_W, padded_image.shape[2]):
-            pass
         assert cropped_img.shape == (IN_H, IN_W, padded_image.shape[2])
         # Heatmap
         heat_cxy = int(round(annorect.objpos[0] * scale_heat_w)) + IN_HEAT_W//2, int(round(annorect.objpos[1] * scale_heat_h)) + IN_HEAT_H//2
@@ -279,12 +278,30 @@ def prepare_network_input(mpi_sample, pcm_paf):
         assert cropped_heat.shape == (padded_maps.shape[0], IN_HEAT_H, IN_HEAT_W)
         img_heat_list.append((cropped_img, cropped_heat))
 
+    img_heat_list = image_augment(img_heat_list)
     return img_heat_list
 
 
-def image_augment(img_heat_list, pcm_paf):
+def image_augment(img_heat_list):
     """Random augmentation"""
-    pass
+    new_im_he_list = []
+    for im_heat in img_heat_list:
+        im = im_heat[0]
+        heat = im_heat[1]
+
+        # Flip
+        if np.random.choice(2) == 1:
+            im = np.flip(im, axis=1)
+            heat = np.flip(heat, axis=2)
+
+        # Rotate
+        angle = np.random.random() * 60 - 30  # -30 - 30 C
+        im = scipy.ndimage.interpolation.rotate(im, angle, axes=(0, 1), reshape=False)
+        heat = scipy.ndimage.interpolation.rotate(heat, angle, axes=(1, 2), reshape=False)
+
+        new_im_he = (im, heat)
+        new_im_he_list.append(new_im_he)
+    return new_im_he_list
 
 
 def resize_imgs():
