@@ -38,11 +38,35 @@ class PoseNet:
         self.next_layer_input = c
         return self
 
+    def max_pool(self, name):
+        p = layers.max_pool2d(self.next_layer_input, 2, 2)
+        self.layer_dict[name] = p
+        self.next_layer_input = p
+        return self
+
     def vgg_10(self, image_input, trainable=False):
         self.layer_dict['image'] = image_input
         vgg_10_layers = vgg19.Vgg10(self.VGG_PARAM_PATH, trainable)
         vgg_10_out = vgg_10_layers.build(image_input)
         return vgg_10_out
+
+    def top_10_layers(self, image_input):
+        self.layer_dict['image'] = image_input
+        (self.feed('image')
+            .conv(64, 3, 'conv_1_1')
+            .conv(64, 3, 'conv_1_2')
+            .max_pool('pool_1_stage1')
+            .conv(128, 3, 'conv_2_1')
+            .conv(128, 3, 'conv_2_2')
+            .max_pool('pool_2_stage1')
+            .conv(256, 3, 'conv_3_1')
+            .conv(256, 3, 'conv_3_2')
+            .conv(256, 3, 'conv_3_3')
+            .conv(256, 3, 'conv_3_4')
+            .max_pool('pool_3_stage1')
+            .conv(512, 3, 'conv_4_1')
+            .conv(512, 3, 'conv_4_2'))
+        return self.layer_dict['conv_4_2']
 
     def inference_pose(self, conv_4_2):
         self.layer_dict['conv_4_2'] = conv_4_2
@@ -146,11 +170,11 @@ class PoseNet:
             if 'mconv6' in layer_name and '_l2' in layer_name:
                 l2s.append(self.layer_dict[layer_name])
         for i, l1 in enumerate(l1s):
-            loss = tf.nn.l2_loss(l1 - batch_paf) / batch_size
+            loss = tf.nn.l2_loss(l1 - batch_paf) / batch_size / 10
             tf.summary.scalar(name='l1_stage'+str(i+1), tensor=loss)
             l1s_loss.append(loss)
         for i, l2 in enumerate(l2s):
-            loss = tf.nn.l2_loss(l2 - batch_pcm) / batch_size
+            loss = tf.nn.l2_loss(l2 - batch_pcm) / batch_size / 6
             tf.summary.scalar(name='l2_stage'+str(i+1), tensor=loss)
             l2s_loss.append(loss)
         total_l1_loss = tf.reduce_mean(l1s_loss)
@@ -160,8 +184,8 @@ class PoseNet:
         return total_loss
 
     def add_image_summary(self):
-        tf.summary.image("S2L1-0", tf.expand_dims(self.layer_dict['mconv6_stage5_l1'][:, :, :, 0], axis=-1))
-        tf.summary.image("S2L2-0", tf.expand_dims(self.layer_dict['mconv6_stage5_l2'][:, :, :, 0], axis=-1))
+        tf.summary.image("L1-Loss", tf.expand_dims(self.layer_dict['mconv6_stage5_l1'][:, :, :, 0], axis=-1))
+        tf.summary.image("L2-Loss", tf.expand_dims(self.layer_dict['mconv6_stage5_l2'][:, :, :, 0], axis=-1))
         tf.summary.image("IMAGE", self.layer_dict['image'])
         tf.summary.image("L1-GT", tf.expand_dims(self.layer_dict['paf_gt'][:, :, :, 0], axis=-1))
         tf.summary.image("L2-GT", tf.expand_dims(self.layer_dict['pcm_gt'][:, :, :, 0], axis=-1))

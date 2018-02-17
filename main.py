@@ -16,7 +16,7 @@ tf.flags.DEFINE_string('mode', 'train', "Mode train/ test")
 MAX_EPOCH = 200
 
 BATCH_SIZE = 30
-LEARNING_RATE = 0.00006
+LEARNING_RATE = 0.001
 log_dict = {}
 
 
@@ -48,14 +48,15 @@ def main(argv=None):
     paf_holder = tf.placeholder(tf.float32, shape=[None, du.IN_HEAT_H, du.IN_HEAT_W, 10], name='paf_holder')
     # Build netowrk
     pose_net = nets.PoseNet()
-    conv_4_2 = pose_net.vgg_10(image_holder, trainable=True)
+    # conv_4_2 = pose_net.vgg_10(image_holder, trainable=True)
+    conv_4_2 = pose_net.top_10_layers(image_holder)
     pose_net.inference_pose(conv_4_2)
     # Build loss tensor
     total_loss = pose_net.loss_l1_l2(pcm_holder, paf_holder, BATCH_SIZE)
 
     global_step = tf.Variable(0, trainable=False)
     decaying_learning_rate = tf.train.exponential_decay(LEARNING_RATE, global_step,
-                                           10000, 0.92, staircase=True)
+                                           10000, 0.33, staircase=True)
     optimizer = tf.train.AdamOptimizer(learning_rate=decaying_learning_rate)
     grads = optimizer.compute_gradients(total_loss)
 
