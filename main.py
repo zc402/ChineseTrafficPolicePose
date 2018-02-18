@@ -100,6 +100,7 @@ def main(argv=None):
             batch_images.append(img)
 
         # Feed the network
+        # print("GPU Begin")
         # if FLAGS.mode == "train":
         feed_dict = {image_holder: batch_images, pcm_holder: batch_pcm, paf_holder: batch_paf}
         _, total_loss_num, global_step_num, learning_rate_num = sess.run([train_op, total_loss, global_step, decaying_learning_rate], feed_dict)

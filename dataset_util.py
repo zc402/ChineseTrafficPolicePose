@@ -136,14 +136,19 @@ def load_labels_from_disk():
                 # Joints
                 annorect.joint_list = list()
                 joint_num = release['annolist'][0, imgidx]['annorect'][0, ridx]['annopoints'][0, 0]['point'].shape[1]
-                for joint in range(joint_num):
-                    annorect.joint_list.append(
-                        (release['annolist'][0, imgidx]['annorect'][0, ridx]['annopoints'][0, 0]['point'][0]
-                         ['id'][joint][0, 0],
-                         release['annolist'][0, imgidx]['annorect'][0, ridx]['annopoints'][0, 0]['point'][0]
-                         ['x'][joint][0, 0],
-                         release['annolist'][0, imgidx]['annorect'][0, ridx]['annopoints'][0, 0]['point'][0]
-                         ['y'][joint][0, 0])
+                for joint_arr_id in range(joint_num):
+                    joint_id = release['annolist'][0, imgidx]['annorect'][0, ridx]['annopoints'][0, 0]['point'][0]['id'][joint_arr_id][0, 0]
+                    if joint_id == int(8) or joint_id == int(9):
+                        continue  # Upper neck and head top, no visibility annotation
+                    is_visible = release['annolist'][0, imgidx]['annorect'][0, ridx]['annopoints'][0, 0]['point'][0]['is_visible'][joint_arr_id][0, 0]
+                    if is_visible == '1' or is_visible == 1:
+                        annorect.joint_list.append(
+                            (release['annolist'][0, imgidx]['annorect'][0, ridx]['annopoints'][0, 0]['point'][0]
+                             ['id'][joint_arr_id][0, 0],
+                             release['annolist'][0, imgidx]['annorect'][0, ridx]['annopoints'][0, 0]['point'][0]
+                             ['x'][joint_arr_id][0, 0],
+                             release['annolist'][0, imgidx]['annorect'][0, ridx]['annopoints'][0, 0]['point'][0]
+                             ['y'][joint_arr_id][0, 0])
                     )
                 # Add annorect to annorect_list
                 mpi_sample.annorect_list.append(annorect)
@@ -289,15 +294,17 @@ def image_augment(img_heat_list):
         im = im_heat[0]
         heat = im_heat[1]
 
-        # Flip
-        if np.random.choice(2) == 1:
-            im = np.flip(im, axis=1)
-            heat = np.flip(heat, axis=2)
+        # Flip !!flip will swap left and right
+        # if np.random.choice(2) == 1:
+           #  im = np.flip(im, axis=1)
+           #  heat = np.flip(heat, axis=2)
 
         # Rotate
         angle = np.random.random() * 60 - 30  # -30 - 30 C
         im = scipy.ndimage.interpolation.rotate(im, angle, axes=(0, 1), reshape=False)
         heat = scipy.ndimage.interpolation.rotate(heat, angle, axes=(1, 2), reshape=False)
+
+        im = np.clip(im, 0.0, 1.0)
 
         new_im_he = (im, heat)
         new_im_he_list.append(new_im_he)
