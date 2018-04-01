@@ -358,7 +358,7 @@ def resize_imgs_keep_ratio():
         re_im = Image.fromarray(bg, 'RGB')
         re_im = re_im.resize((PW, PH), Image.ANTIALIAS)
         out_path = os.path.join(RESIZED_RATIO_KEPT, name)
-        # re_im.save(out_path)
+        re_im.save(out_path)
 
         print(str(i) + ' ' + name)
 
