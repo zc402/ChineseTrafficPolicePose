@@ -1,0 +1,12 @@
+plt.figure(1)
+plt.imshow(im)
+plt.figure(2)
+plt.imshow(heat[0])
+plt.show()
+
+
+plt.figure(1)
+plt.imshow(im)
+plt.figure(2)
+plt.imshow(l1[0,:,:,4])
+plt.show()

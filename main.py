@@ -12,7 +12,7 @@ from PIL import Image
 import dataset_util as du
 
 FLAGS = tf.flags.FLAGS
-tf.flags.DEFINE_string('mode', 'train', "Mode train/ test")
+tf.flags.DEFINE_string('mode', 'test', "Mode: train / test")
 MAX_EPOCH = 200
 
 BATCH_SIZE = 30
@@ -56,7 +56,7 @@ def main(argv=None):
 
     global_step = tf.Variable(0, trainable=False)
     decaying_learning_rate = tf.train.exponential_decay(LEARNING_RATE, global_step,
-                                           10000, 0.33, staircase=True)
+                                           10000, 0.5, staircase=True)
     optimizer = tf.train.AdamOptimizer(learning_rate=decaying_learning_rate)
     grads = optimizer.compute_gradients(total_loss)
 
@@ -77,6 +77,16 @@ def main(argv=None):
         sess.run(tf.global_variables_initializer())
     summary_writer = tf.summary.FileWriter("logs/summary", sess.graph)
     img_summary_writer = tf.summary.FileWriter("logs/summary-img")
+    # Test
+    if FLAGS.mode == 'test':
+        # BATCH_SIZE = 1
+        test_file = 'test.jpg'
+        im = Image.open(test_file)
+        re_im = np.asarray(im.resize((376, 376), Image.ANTIALIAS))
+        re_im = re_im[np.newaxis, :, :, :] / 255
+        feed_dict = {image_holder: re_im}
+        l1, l2 = sess.run([pose_net.layer_dict['mconv6_stage5_l1'], pose_net.layer_dict['mconv6_stage5_l2']], feed_dict)
+        exit(0)
     # Load samples from disk
     samples_gen = samples_generator()
     # Start Feeding the network
@@ -120,6 +130,7 @@ def main(argv=None):
             # img_summary_writer.add_summary(summary_img_str, sess.run(global_step))
 
             saver.save(sess, "logs/ckpt")
+            print('Saved')
 
         # log_dict['itr'] = itr
 

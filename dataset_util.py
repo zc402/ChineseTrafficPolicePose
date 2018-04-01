@@ -9,6 +9,7 @@ from PIL import Image
 import pickle
 import skimage.io
 import skimage.transform
+import tensorflow as tf
 
 MPI_LABEL_PATH = "./dataset/MPI/mpii_human_pose_v1_u12_2/mpii_human_pose_v1_u12_1.mat"
 MPI_LABEL_OBJ_PATH = "./dataset/gen/label_obj"
@@ -323,4 +324,61 @@ def resize_imgs():
         print(str(i) + ' ' + name)
 
 
+RESIZED_RATIO_KEPT = "./dataset/gen/ratio_kept"
+# [Image][Person][Joint][x,y,mask]
+IPJC_FILE = "./dataset/gen/ipjc.npy"
+INAME_FILE = "./dataset/gen/iname.npy"
+# [ImageName]
+def resize_imgs_keep_ratio():
+    """Resize with ratio unchanged"""
+    train_labels, _ = load_labels_from_disk()
+    target_ratio = PW / PH
+    ipjc_list = list() # Image pjc
+    iname_list = list() # Image name
+    excluded = 0
+    for i, t_label in enumerate(train_labels):
+        name = t_label.name
+        file = os.path.join(IMAGE_FOLDER_PATH, name)
+        im = Image.open(file)
+        np_im = np.asarray(im.convert("RGB"))
+        ori_size = im.size
+        ori_ratio = ori_size[0] / ori_size[1]
+        if ori_ratio >= target_ratio:
+            # Depends on width
+            zoom_ratio = PW / ori_size[0]
+            bg = np.zeros((int(ori_size[0] / target_ratio), ori_size[0], 3), np.uint8)
+            bg = bg[:ori_size[1], :ori_size[0], :] + np_im[:, :, :]
+
+        elif ori_ratio < target_ratio:
+            # Depends on height
+            zoom_ratio = PH / ori_size[1]
+            bg = np.zeros((ori_size[1], int(ori_size[1] * target_ratio), 3), np.uint8)
+            bg = bg[:ori_size[1], :ori_size[0], :] + np_im[:, :, :]
+
+        re_im = Image.fromarray(bg, 'RGB')
+        re_im = re_im.resize((PW, PH), Image.ANTIALIAS)
+        out_path = os.path.join(RESIZED_RATIO_KEPT, name)
+        # re_im.save(out_path)
+
+        print(str(i) + ' ' + name)
+
+        # Generate array labels
+        if len(t_label.annorect_list) > 8: # More than 8 person
+            excluded = excluded + 1
+            continue
+        single_image = np.zeros((8, 6, 3), dtype=np.float32)
+        for j, anno in enumerate(t_label.annorect_list): # Each person
+            for k, joint in enumerate(anno.joint_list): # Each joint
+                if 10 <= joint[0] <= 15:
+                    index = joint[0] - 10
+                    single_image[j][index][0] = joint[1] * zoom_ratio
+                    single_image[j][index][1] = joint[2] * zoom_ratio
+                    single_image[j][index][2] = 1
+        ipjc_list.append(single_image)
+        iname_list.append(name)
+
+    np.save(IPJC_FILE, np.asarray(ipjc_list))
+    np.save(INAME_FILE, np.asarray(iname_list))
+    print(str(excluded) + " excluded")
+    pass
 
