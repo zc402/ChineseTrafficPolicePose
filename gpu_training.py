@@ -14,7 +14,7 @@ import gpu_network
 
 PH, PW = (376, 656) # If changed, modify 'divide 8' in gpu_pipeline as well
 BATCH_SIZE = 15
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.0008
 
 
 def build_training_ops(loss_tensor):

@@ -169,10 +169,16 @@ def training_samples_gen(batch_size):
     :param batch_size:
     :return: img_batch, ipjc_batch
     """
-    RESIZED_RATIO_KEPT = "./dataset/gen/ratio_kept"
-    # [Image][Person][Joint][x,y,mask]
-    IPJC_FILE = "./dataset/gen/ipjc.npy"
-    INAME_FILE = "./dataset/gen/iname.npy"
+    # TODO: use both MPII and AI Dataset
+    # RESIZED_RATIO_KEPT = "./dataset/gen/ratio_kept"
+    # IPJC_FILE = "./dataset/gen/ipjc.npy" # [Image][Person][Joint][x,y,mask]
+    # INAME_FILE = "./dataset/gen/iname.npy"
+    
+    # AI dataset
+    RESIZED_RATIO_KEPT = "dataset/gen/ai_challenger_ratio_kept"
+    IPJC_FILE = "./dataset/gen/ai_ipjc.npy"  # [Image][Person][Joint][x,y,mask]
+    INAME_FILE = "./dataset/gen/ai_iname.npy"
+    
     ipjc = np.load(IPJC_FILE)
     iname = np.load(INAME_FILE)
     
