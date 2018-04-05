@@ -91,9 +91,11 @@ def resize_keep_ratio():
     ipjc3, iname3 = list(zip(*ipjcs_inames_list))
     ipjc3 = np.reshape(np.asarray(ipjc3), [-1])
     iname3 = np.reshape(np.asarray(iname3), [-1])
-    
-    np.save(AI_IPJC_FILE, ipjc3)
-    np.save(AI_INAME_FILE, iname3)
+
+    ipjc_con = np.concatenate(ipjc3, 0)
+    iname_con = np.concatenate(iname3, 0)
+    np.save(AI_IPJC_FILE, ipjc_con)
+    np.save(AI_INAME_FILE, iname_con)
 
 resize_keep_ratio()
     
