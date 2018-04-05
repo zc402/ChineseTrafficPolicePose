@@ -347,13 +347,13 @@ def resize_imgs_keep_ratio():
             # Depends on width
             zoom_ratio = PW / ori_size[0]
             bg = np.zeros((int(ori_size[0] / target_ratio), ori_size[0], 3), np.uint8)
-            bg = bg[:ori_size[1], :ori_size[0], :] + np_im[:, :, :]
 
         elif ori_ratio < target_ratio:
             # Depends on height
             zoom_ratio = PH / ori_size[1]
             bg = np.zeros((ori_size[1], int(ori_size[1] * target_ratio), 3), np.uint8)
-            bg = bg[:ori_size[1], :ori_size[0], :] + np_im[:, :, :]
+            
+        bg[:ori_size[1], :ori_size[0], :] = bg[:ori_size[1], :ori_size[0], :] + np_im[:, :, :]
 
         re_im = Image.fromarray(bg, 'RGB')
         re_im = re_im.resize((PW, PH), Image.ANTIALIAS)

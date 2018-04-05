@@ -40,14 +40,13 @@ def resize_keep_ratio():
                 # Depends on width
                 zoom_ratio = PW / ori_size[0]
                 bg = np.zeros((int(ori_size[0] / target_ratio), ori_size[0], 3), np.uint8)
-                bg = bg[:ori_size[1], :ori_size[0], :] + np_im[:, :, :]
 
             elif ori_ratio < target_ratio:
                 # Depends on height
                 zoom_ratio = PH / ori_size[1]
                 bg = np.zeros((ori_size[1], int(ori_size[1] * target_ratio), 3), np.uint8)
-                bg = bg[:ori_size[1], :ori_size[0], :] + np_im[:, :, :]
-
+                
+            bg[:ori_size[1], :ori_size[0], :] = bg[:ori_size[1], :ori_size[0], :] + np_im[:, :, :]
             re_im = Image.fromarray(bg, 'RGB')
             re_im = re_im.resize((PW, PH), Image.ANTIALIAS)
             out_path = os.path.join(RESIZED_IMG_FOLDER, name)
@@ -82,7 +81,7 @@ def resize_keep_ratio():
             
         return [ipjc_arr, iname_arr]
         
-    target_ratio = PH / PW
+    target_ratio = PW / PH
     with open(SET_A_LABEL) as label_a, open(SET_B_LABEL) as label_b, open(SET_C_LABEL) as label_c:
         files = [label_a, label_b, label_c]
         json_labels_list = [json.load(l) for l in files]
