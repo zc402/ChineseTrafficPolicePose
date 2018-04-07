@@ -25,7 +25,7 @@ def resize_keep_ratio():
         labels = [l for l in labels if len(l['keypoint_annotations'])<=8]
         num_img = len(labels)
         ipjc_arr = np.zeros([num_img, 8, 6, 3], np.float32)
-        iname_arr = np.zeros([num_img], np.string_)
+        iname_list = list()
 
         for idx, img_label in enumerate(labels):
             
@@ -54,7 +54,7 @@ def resize_keep_ratio():
             print(str(idx) + ' ' + name)
             
             # Modify label
-            iname_arr[idx] = name
+            iname_list.append(name)
             anno_dict = img_label['keypoint_annotations']
             for p, human_key in enumerate(img_label['keypoint_annotations']):
                 anno = anno_dict[human_key]
@@ -78,7 +78,7 @@ def resize_keep_ratio():
                 if visible(5):
                     set_ipjc(5, 5)
                 
-            
+        iname_arr = np.asarray(iname_list)
         return [ipjc_arr, iname_arr]
         
     target_ratio = PW / PH
