@@ -4,6 +4,7 @@ This file provides utils for ai_challenger dataset
 import json
 import numpy as np
 import os
+import os.path
 from PIL import Image
 
 SET_A_IMG = "dataset/AI_challenger_keypoint/ai_challenger_keypoint_test_a_20180103/keypoint_test_a_images_20180103"
@@ -12,6 +13,8 @@ SET_B_IMG = "dataset/AI_challenger_keypoint/ai_challenger_keypoint_test_b_201801
 SET_B_LABEL = "dataset/AI_challenger_keypoint/ai_challenger_keypoint_test_b_20180103/keypoint_test_b_annotations_20180103.json"
 SET_C_IMG = "dataset/AI_challenger_keypoint/ai_challenger_keypoint_validation_20170911/keypoint_validation_images_20170911"
 SET_C_LABEL = "dataset/AI_challenger_keypoint/ai_challenger_keypoint_validation_20170911/keypoint_validation_annotations_20170911.json"
+SET_D_IMG = "dataset/AI_challenger_keypoint/ai_challenger_keypoint_validation_20170911/keypoint_train_images_20170902"
+SET_D_LABEL = "dataset/AI_challenger_keypoint/ai_challenger_keypoint_validation_20170911/keypoint_train_annotations_20170909.json"
 RESIZED_IMG_FOLDER = "dataset/gen/ai_challenger_ratio_kept"
 
 AI_IPJC_FILE = "./dataset/gen/ai_ipjc.npy"
@@ -19,6 +22,11 @@ AI_INAME_FILE = "./dataset/gen/ai_iname.npy"
 
 PH, PW = (376, 656)
 def resize_keep_ratio():
+    
+    label_collection = [SET_A_LABEL, SET_B_LABEL, SET_C_LABEL, SET_D_LABEL]
+    img_folder_collection = [SET_A_IMG, SET_B_IMG, SET_C_IMG, SET_D_IMG]
+    assert(len(label_collection) == len(img_folder_collection))
+    assert(all([os.path.exists(label_collection)]) and all([os.path.exists(img_folder_collection)]))
     
     def resize_by_json(labels, img_folder):
         # drop images with more than 8 people appeared
@@ -82,11 +90,12 @@ def resize_keep_ratio():
         return [ipjc_arr, iname_arr]
         
     target_ratio = PW / PH
-    with open(SET_A_LABEL) as label_a, open(SET_B_LABEL) as label_b, open(SET_C_LABEL) as label_c:
-        files = [label_a, label_b, label_c]
-        json_labels_list = [json.load(l) for l in files]
-    img_folder_list = [SET_A_IMG, SET_B_IMG, SET_C_IMG]
-    la_im_list = list(zip(json_labels_list, img_folder_list))
+    
+    files = [open(l) for l in label_collection]
+    json_labels_list = [json.load(l) for l in files]
+    [f.close() for f in files]
+    
+    la_im_list = list(zip(json_labels_list, img_folder_collection))
     ipjcs_inames_list = [resize_by_json(*la_im) for la_im in la_im_list] # [3][ipjc, iname]
     ipjc3, iname3 = list(zip(*ipjcs_inames_list))
     ipjc3 = np.reshape(np.asarray(ipjc3), [-1])
