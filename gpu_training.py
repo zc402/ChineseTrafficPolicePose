@@ -73,7 +73,7 @@ def main(argv=None):
     
     # Load samples from disk
     samples_gen = gpu_pipeline.training_samples_gen(BATCH_SIZE)
-    for itr in range(int(1e7)):
+    for itr in range(1, int(1e7)):
         batch_img, batch_ipjc = next(samples_gen)
         feed_dict = {img_holder: batch_img, ipjc_holder: batch_ipjc}
         loss_num, g_step_num, lr_num, train_op = sess.run(lgdts_tensor[0:4], feed_dict=feed_dict)
