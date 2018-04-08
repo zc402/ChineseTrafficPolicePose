@@ -26,7 +26,7 @@ def build_training_ops(loss_tensor):
     global_step = tf.Variable(0, trainable=False)
     
     decaying_learning_rate = tf.train.exponential_decay(LEARNING_RATE, global_step,
-                                           20000, 0.5, staircase=True)
+                                           20000, 0.8, staircase=True)
     
     optimizer = tf.train.AdamOptimizer(learning_rate=decaying_learning_rate)
     grads = optimizer.compute_gradients(loss_tensor)
