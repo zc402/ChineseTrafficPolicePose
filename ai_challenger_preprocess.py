@@ -26,7 +26,7 @@ def resize_keep_ratio():
     label_collection = [SET_A_LABEL, SET_B_LABEL, SET_C_LABEL, SET_D_LABEL]
     img_folder_collection = [SET_A_IMG, SET_B_IMG, SET_C_IMG, SET_D_IMG]
     assert(len(label_collection) == len(img_folder_collection))
-    assert(all([os.path.exists(label_collection)]) and all([os.path.exists(img_folder_collection)]))
+    assert(all([os.path.exists(f) for f in label_collection]) and all([os.path.exists(f) for f in img_folder_collection]))
     
     def resize_by_json(labels, img_folder):
         # drop images with more than 8 people appeared
