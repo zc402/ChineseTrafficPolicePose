@@ -191,8 +191,9 @@ def training_samples_gen(batch_size):
         random.shuffle(zipped_list)
         iname_list_s, ipjc_list_s = zip(*zipped_list) # Unzip
         for num in range(0, len(iname_list_s) - batch_size, batch_size):
-            img_batch = [np.asarray(Image.open(os.path.join(RESIZED_RATIO_KEPT, name)), np.float32) / 255.
-                        for name in iname_list_s[num : num+batch_size]]
+            sample_imgs = [Image.open(os.path.join(RESIZED_RATIO_KEPT, name)) for name in iname_list_s[num : num+batch_size]]
+            img_batch = [np.asarray(img.convert("RGB"), np.float32) / 255. for img in sample_imgs]
+            [img.close() for img in sample_imgs]
             ipjc_batch = ipjc_list_s[num : num+batch_size]
             yield img_batch, ipjc_batch
     
