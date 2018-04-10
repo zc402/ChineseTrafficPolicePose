@@ -142,7 +142,7 @@ def load_labels_from_disk():
                     if joint_id == int(8) or joint_id == int(9):
                         continue  # Upper neck and head top, no visibility annotation
                     is_visible = release['annolist'][0, imgidx]['annorect'][0, ridx]['annopoints'][0, 0]['point'][0]['is_visible'][joint_arr_id][0, 0]
-                    if True: # Now allow invisible joints as well. This line was: is_visible == '1' or is_visible == 1:
+                    if is_visible == '1' or is_visible == 1:
                         annorect.joint_list.append(
                             (release['annolist'][0, imgidx]['annorect'][0, ridx]['annopoints'][0, 0]['point'][0]
                              ['id'][joint_arr_id][0, 0],

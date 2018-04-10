@@ -68,7 +68,7 @@ def resize_keep_ratio():
                 anno = anno_dict[human_key]
                 anno = np.asarray(anno, dtype=np.int32).reshape([14, 3])
                 # annotation in ai challenger: 0/右肩，1/右肘，2/右腕，3/左肩，4/左肘，5/左腕
-                visible = lambda ai_j: anno[ai_j, 2] <= 2 # Include visible or invisible but existed joints
+                visible = lambda ai_j: anno[ai_j, 2] == 1 # Looks for visible joints only
                 def set_ipjc(pose_j, ai_j):
                     ipjc_arr[idx, p, pose_j, 0:2] = anno[ai_j, 0:2] * zoom_ratio
                     ipjc_arr[idx, p, pose_j, 2] = anno[ai_j, 2] # mask or visible are both 1 in annotation
