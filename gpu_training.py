@@ -11,8 +11,8 @@ import sys
 
 import gpu_pipeline
 import gpu_network
+import parameters
 
-PH, PW = (376, 656) # If changed, modify 'divide 8' in gpu_pipeline as well
 BATCH_SIZE = 15
 LEARNING_RATE = 0.0008
 
@@ -53,6 +53,7 @@ def print_log(loss_num, g_step_num, lr_num, itr):
 
 def main(argv=None):
     # Place Holder
+    PH, PW = parameters.PH, parameters.PW
     ipjc_holder = tf.placeholder(tf.float32, [BATCH_SIZE, 8, 6, 3])
     img_holder = tf.placeholder(tf.float32, [BATCH_SIZE, PH, PW, 3])
     # Entire network

@@ -5,6 +5,7 @@ from PIL import Image
 import os
 import math
 import random
+import parameters
 from tensorflow.python import debug as tf_debug
 
 def part_confidence_maps(ipjc_tensor, paf_mask, heat_size):
@@ -148,7 +149,7 @@ def build_training_pipeline(ipjc_holder, img_holder):
     :return: [I][H][W][3], [Image][H][W][Joint,Bone*2]
     """
     with tf.variable_scope("prepare"):
-        HEAT_SIZE = (82, 47)
+        HEAT_SIZE = parameters.HEAT_SIZE
         ipjc_tensor = tf.divide(ipjc_holder[:, :, :, 0:2], 8)  # TODO: img to heat, divide 8 in ipjc.npy
         pcm_mask = ipjc_holder[:, :, :, 2]
     with tf.variable_scope("pcm"):

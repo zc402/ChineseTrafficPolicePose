@@ -6,6 +6,7 @@ import numpy as np
 import os
 import os.path
 from PIL import Image
+import parameters
 
 SET_A_IMG = "dataset/AI_challenger_keypoint/ai_challenger_keypoint_test_a_20180103/keypoint_test_a_images_20180103"
 SET_A_LABEL = "dataset/AI_challenger_keypoint/ai_challenger_keypoint_test_a_20180103/keypoint_test_a_annotations_20180103.json"
@@ -20,7 +21,7 @@ RESIZED_IMG_FOLDER = "dataset/gen/ai_challenger_ratio_kept"
 AI_IPJC_FILE = "./dataset/gen/ai_ipjc.npy"
 AI_INAME_FILE = "./dataset/gen/ai_iname.npy"
 
-PH, PW = (376, 656)
+PH, PW = parameters.PH, parameters.PW
 def resize_keep_ratio():
     
     label_collection = [SET_A_LABEL, SET_B_LABEL, SET_C_LABEL, SET_D_LABEL]
