@@ -7,6 +7,7 @@ import os
 import os.path
 from PIL import Image
 import parameters
+import sys
 
 SET_A_IMG = "dataset/AI_challenger_keypoint/ai_challenger_keypoint_test_a_20180103/keypoint_test_a_images_20180103"
 SET_A_LABEL = "dataset/AI_challenger_keypoint/ai_challenger_keypoint_test_a_20180103/keypoint_test_a_annotations_20180103.json"
@@ -107,6 +108,7 @@ def resize_keep_ratio():
     np.save(AI_IPJC_FILE, ipjc_con)
     np.save(AI_INAME_FILE, iname_con)
 
+assert sys.version_info >= (3,5)
 resize_keep_ratio()
     
     
