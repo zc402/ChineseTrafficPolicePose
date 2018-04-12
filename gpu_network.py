@@ -5,6 +5,14 @@ class PoseNet:
     def __init__(self):
         self.layer_dict = {}
         self.next_layer_input = None  # Input for next self.conv()
+        self.var_trainable = True
+    
+    def __set_var_trainable(self, trainable):
+        """
+        Toggle variants between trainable and un-trainable
+        :param trainable: bool
+        """
+        self.var_trainable = trainable
 
     def feed(self, feed_name):
         try:
@@ -28,9 +36,9 @@ class PoseNet:
 
     def conv(self, filters, kernel_size, name, relu=True):
         if relu:
-            c = layers.conv2d(self.next_layer_input, filters, kernel_size, activation_fn=tf.nn.relu, scope=name)
+            c = layers.conv2d(self.next_layer_input, filters, kernel_size, activation_fn=tf.nn.relu, scope=name, trainable=self.var_trainable)
         else:
-            c = layers.conv2d(self.next_layer_input, filters, kernel_size, activation_fn=None, scope=name)
+            c = layers.conv2d(self.next_layer_input, filters, kernel_size, activation_fn=None, scope=name, trainable=self.var_trainable)
         self.layer_dict[name] = c
         self.next_layer_input = c
         return self
@@ -41,7 +49,12 @@ class PoseNet:
         self.next_layer_input = p
         return self
 
-    def inference_pose(self, image_input):
+    def inference_paf_pcm(self, image_input):
+        """
+        Inference l1:paf l2:pcm heatmaps
+        :param image_input: Original image
+        :return: Concatenation of [paf pcm]
+        """
         self.layer_dict['image'] = image_input
         (self.feed('image')
              .conv(64, 3, 'conv_1_1')
@@ -164,10 +177,12 @@ class PoseNet:
          .conv(128, 1, 'mconv6_stage6_l2')
          .conv(6, 1, 'mconv7_stage6_l2', relu=False)
          )
+        
+        return self.concat(['mconv7_stage6_l1' 'mconv7_stage6_l2'], 'concat_stage7')
 
-    def loss_l1_l2(self, batch_pcm, batch_paf):
+    def _loss_paf_pcm(self, batch_pcm, batch_paf):
         """
-        Build loss of network
+        Use pose inference to build loss of network
         :param batch_pcm: [None, H, W, 6]
         :param batch_paf: [None, H, W, 10]
         :return: total loss value
@@ -185,11 +200,11 @@ class PoseNet:
                 l2s.append(self.layer_dict[layer_name])
         for i, l1 in enumerate(l1s):
             loss = tf.nn.l2_loss(l1 - batch_paf) / batch_size  / 10
-            tf.summary.scalar(name='l1_stage'+str(i+1), tensor=loss)
+            # tf.summary.scalar(name='l1_stage'+str(i+1), tensor=loss)
             l1s_loss.append(loss)
         for i, l2 in enumerate(l2s):
             loss = tf.nn.l2_loss(l2 - batch_pcm) / batch_size / 6
-            tf.summary.scalar(name='l2_stage'+str(i+1), tensor=loss)
+            # tf.summary.scalar(name='l2_stage'+str(i+1), tensor=loss)
             l2s_loss.append(loss)
         total_l1_loss = tf.reduce_mean(l1s_loss)
         total_l2_loss = tf.reduce_mean(l2s_loss)
@@ -197,16 +212,25 @@ class PoseNet:
         tf.summary.scalar(name='total_loss', tensor=total_loss)
         return total_loss
 
-    def add_image_summary(self):
+    def _add_paf_summary(self):
+        """
+        Add images of paf_pcm to tensorboard
+        """
         tf.summary.image("L1-Final", tf.expand_dims(self.layer_dict['mconv7_stage6_l1'][:, :, :, 0], axis=-1))
         tf.summary.image("L2-Final", tf.expand_dims(self.layer_dict['mconv7_stage6_l2'][:, :, :, 0], axis=-1))
         tf.summary.image("IMAGE", self.layer_dict['image'])
         tf.summary.image("L1-GT", tf.expand_dims(self.layer_dict['paf_gt'][:, :, :, 0], axis=-1))
         tf.summary.image("L2-GT", tf.expand_dims(self.layer_dict['pcm_gt'][:, :, :, 0], axis=-1))
     
-    def build_all(self, img_tensor, i_hv_tensor):
-        self.inference_pose(img_tensor)
-        total_loss = self.loss_l1_l2(i_hv_tensor[:, :, :, :6], i_hv_tensor[:, :, :, 6:])
-        self.add_image_summary()
+    def build_paf_pcm_loss(self, img_tensor, i_hv_tensor):
+        """
+        Build the loss of paf_pcm, only used on training paf_pcm layers
+        :param img_tensor:
+        :param i_hv_tensor:
+        :return: A scalar loss tensor
+        """
+        self.inference_paf_pcm(img_tensor)
+        total_loss = self._loss_paf_pcm(i_hv_tensor[:, :, :, :6], i_hv_tensor[:, :, :, 6:])
+        self._add_paf_summary()
         return total_loss
         
