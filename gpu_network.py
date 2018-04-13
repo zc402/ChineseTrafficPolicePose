@@ -178,7 +178,8 @@ class PoseNet:
          .conv(6, 1, 'mconv7_stage6_l2', relu=False)
          )
         
-        return self.concat(['mconv7_stage6_l1', 'mconv7_stage6_l2'], 'concat_stage7')
+        self.concat(['mconv7_stage6_l1', 'mconv7_stage6_l2'], 'concat_stage7')
+        return self.layer_dict['concat_stage7']
 
     def _loss_paf_pcm(self, batch_pcm, batch_paf):
         """

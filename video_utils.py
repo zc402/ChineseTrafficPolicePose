@@ -7,11 +7,19 @@ import sys
 assert sys.version_info >= (3,5)
 
 # video = skvideo.io.vread("dataset/policepose_video/20180412.mp4")#,num_frames=4*1800)
+def test():
+    videogen = skvideo.io.vreader("dataset/policepose_video/20180412.m4v")
+    for frame in videogen:
+        viewer = ImageViewer(frame)
+        viewer.show()
+
 # print(video.shape)
-metadata = skvideo.io.ffprobe("dataset/policepose_video/20180412.m4v")
-print(metadata.keys())
-print(json.dumps(metadata["video"], indent=4))
-total_frames = metadata["video"]["@nb_frames"]
+
+# metadata = skvideo.io.ffprobe("dataset/policepose_video/20180412.m4v")
+# print(metadata.keys())
+# print(json.dumps(metadata["video"], indent=4))
+# total_frames = metadata["video"]["@nb_frames"]
+
 # viewer = ImageViewer(video[-1])
 # viewer.show()
 
@@ -39,6 +47,6 @@ def class_per_frame(srt, total_frames):
     frame_class_list = [[num, class_of_one_frame(num)] for num in range(total_frames)]
     return frame_class_list
 
-class_per_frame("dataset/policepose_video/20180412.srt", 10000)
+# class_per_frame("dataset/policepose_video/20180412.srt", 10000)
 
     
