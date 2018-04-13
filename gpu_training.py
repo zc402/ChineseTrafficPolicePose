@@ -58,7 +58,7 @@ def main(argv=None):
     img_holder = tf.placeholder(tf.float32, [BATCH_SIZE, PH, PW, 3])
     # Entire network
     img_tensor, i_hv_tensor = gpu_pipeline.build_training_pipeline(ipjc_holder, img_holder)
-    loss_tensor = gpu_network.PoseNet().build_all(img_tensor, i_hv_tensor)
+    loss_tensor = gpu_network.PoseNet().build_paf_pcm_loss(img_tensor, i_hv_tensor)
     lgdts_tensor = build_training_ops(loss_tensor)
     
     # Session Saver summary_writer
