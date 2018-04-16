@@ -201,11 +201,11 @@ class PoseNet:
                 l2s.append(self.layer_dict[layer_name])
         for i, l1 in enumerate(l1s):
             loss = tf.nn.l2_loss(l1 - batch_paf) / batch_size  / 10
-            # tf.summary.scalar(name='l1_stage'+str(i+1), tensor=loss)
+            tf.summary.scalar(name='l1_stage'+str(i+1), tensor=loss)
             l1s_loss.append(loss)
         for i, l2 in enumerate(l2s):
             loss = tf.nn.l2_loss(l2 - batch_pcm) / batch_size / 6
-            # tf.summary.scalar(name='l2_stage'+str(i+1), tensor=loss)
+            tf.summary.scalar(name='l2_stage'+str(i+1), tensor=loss)
             l2s_loss.append(loss)
         total_l1_loss = tf.reduce_mean(l1s_loss)
         total_l2_loss = tf.reduce_mean(l2s_loss)

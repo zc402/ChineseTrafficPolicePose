@@ -5,7 +5,7 @@ from PIL import Image
 import os
 import math
 import random
-import parameters
+import parameters as pa
 from tensorflow.python import debug as tf_debug
 
 def part_confidence_maps(ipjc_tensor, paf_mask, heat_size):
@@ -149,8 +149,8 @@ def build_training_pipeline(ipjc_holder, img_holder):
     :return: [I][H][W][3], [Image][H][W][Joint,Bone*2]
     """
     with tf.variable_scope("prepare"):
-        HEAT_SIZE = parameters.HEAT_SIZE
-        ipjc_tensor = tf.divide(ipjc_holder[:, :, :, 0:2], 8)  # TODO: img to heat, divide 8 in ipjc.npy
+        HEAT_SIZE = pa.HEAT_SIZE
+        ipjc_tensor = tf.divide(ipjc_holder[:, :, :, 0:2], pa.HEAT_ZOOMING_RATE)  # TODO: img to heat, divide 8 in ipjc.npy
         pcm_mask = ipjc_holder[:, :, :, 2]
     with tf.variable_scope("pcm"):
         pcm = part_confidence_maps(ipjc_tensor, pcm_mask, HEAT_SIZE)
@@ -170,10 +170,6 @@ def training_samples_gen(batch_size):
     :param batch_size:
     :return: img_batch, ipjc_batch
     """
-    # TODO: use both MPII and AI Dataset
-    # RESIZED_RATIO_KEPT = "./dataset/gen/ratio_kept"
-    # IPJC_FILE = "./dataset/gen/ipjc.npy" # [Image][Person][Joint][x,y,mask]
-    # INAME_FILE = "./dataset/gen/iname.npy"
     
     # AI dataset
     RESIZED_RATIO_KEPT = "dataset/gen/ai_challenger_ratio_kept"

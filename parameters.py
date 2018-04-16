@@ -2,7 +2,9 @@ import os
 
 # Global Parameters
 PH, PW = (512, 512)
-HEAT_SIZE = (PW/8, PH/8) # 64, 64
+HEAT_ZOOMING_RATE = 8
+HEAT_SIZE = (PW/HEAT_ZOOMING_RATE, PH/HEAT_ZOOMING_RATE) # 64, 64
+MAX_ALLOWED_PEOPLE = 8
 
 RNN_SAVED_HEATMAP_PATH = "./dataset/gen/rnn_saved_heatmap"
 VIDEO_FOLDER_PATH = "dataset/policepose_video"

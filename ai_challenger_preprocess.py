@@ -6,7 +6,7 @@ import numpy as np
 import os
 import os.path
 from PIL import Image
-import parameters
+import parameters as pa
 import sys
 
 SET_A_IMG = "dataset/AI_challenger_keypoint/ai_challenger_keypoint_test_a_20180103/keypoint_test_a_images_20180103"
@@ -22,7 +22,7 @@ RESIZED_IMG_FOLDER = "dataset/gen/ai_challenger_ratio_kept"
 AI_IPJC_FILE = "./dataset/gen/ai_ipjc.npy"
 AI_INAME_FILE = "./dataset/gen/ai_iname.npy"
 
-PH, PW = parameters.PH, parameters.PW
+PH, PW = pa.PH, pa.PW
 def resize_keep_ratio():
     
     label_collection = [SET_A_LABEL, SET_B_LABEL, SET_C_LABEL, SET_D_LABEL]
@@ -31,10 +31,10 @@ def resize_keep_ratio():
     assert(all([os.path.exists(f) for f in label_collection]) and all([os.path.exists(f) for f in img_folder_collection]))
     
     def resize_by_json(labels, img_folder):
-        # drop images with more than 8 people appeared
-        labels = [l for l in labels if len(l['keypoint_annotations'])<=8]
+        # drop images with more than 4 people appeared
+        labels = [l for l in labels if len(l['keypoint_annotations'])<=pa.MAX_ALLOWED_PEOPLE]
         num_img = len(labels)
-        ipjc_arr = np.zeros([num_img, 8, 6, 3], np.float32)
+        ipjc_arr = np.zeros([num_img, pa.MAX_ALLOWED_PEOPLE, 6, 3], np.float32)
         iname_list = list()
 
         for idx, img_label in enumerate(labels):
