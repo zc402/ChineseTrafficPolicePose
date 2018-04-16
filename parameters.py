@@ -19,4 +19,4 @@ def create_necessary_folders():
     dirs = ["./logs", "./dataset/gen", RESIZED_IMG_FOLDER,
             VIDEO_FOLDER_PATH, "./dataset/AI_challenger_keypoint",
             RNN_SAVED_HEATMAP_PATH]
-    map(create, dirs)
+    [create(d) for d in dirs]
