@@ -84,9 +84,10 @@ def resize_keep_ratio(img, ori_size, new_size):
 
 def save_evaluated_heatmaps():
     parameters.create_necessary_folders()
+    batch_size = 10
     # Place Holder
     PH, PW = parameters.PH, parameters.PW
-    img_holder = tf.placeholder(tf.float32, [1, PH, PW, 3])
+    img_holder = tf.placeholder(tf.float32, [10, PH, PW, 3])
     # Entire network
     paf_pcm_tensor = gpu_network.PoseNet().inference_paf_pcm(img_holder)
     
@@ -125,6 +126,16 @@ def save_evaluated_heatmaps():
                 frame = frame / 255.
                 frame = frame[np.newaxis, :, :, :]
                 save_frame_paf_pcm_to_file(frame, video_name, num)
-                
+
+
+def load_evaluated_heatmaps(batch_size):
+    for video_name in parameters.VIDEO_LIST:
+        video_path = os.path.join(parameters.VIDEO_FOLDER_PATH, video_name + ".m4v")
+        paf_path = os.path.join(parameters.RNN_SAVED_HEATMAP_PATH, video_name)
+        srt_path = os.path.join(parameters.VIDEO_FOLDER_PATH, video_name + ".srt")
+
+        metadata = skvideo.io.ffprobe(video_path)
+        total_frame_num = metadata["video"]["@nb_frames"]
+
 save_evaluated_heatmaps()
     
