@@ -17,7 +17,7 @@ SET_C_IMG = "dataset/AI_challenger_keypoint/ai_challenger_keypoint_validation_20
 SET_C_LABEL = "dataset/AI_challenger_keypoint/ai_challenger_keypoint_validation_20170911/keypoint_validation_annotations_20170911.json"
 SET_D_IMG = "dataset/AI_challenger_keypoint/ai_challenger_keypoint_train_20170909/keypoint_train_images_20170902"
 SET_D_LABEL = "dataset/AI_challenger_keypoint/ai_challenger_keypoint_train_20170909/keypoint_train_annotations_20170909.json"
-RESIZED_IMG_FOLDER = "dataset/gen/ai_challenger_ratio_kept"
+RESIZED_IMG_FOLDER = pa.RESIZED_IMG_FOLDER
 
 AI_IPJC_FILE = "./dataset/gen/ai_ipjc.npy"
 AI_INAME_FILE = "./dataset/gen/ai_iname.npy"
