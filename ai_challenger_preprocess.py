@@ -109,6 +109,7 @@ def resize_keep_ratio():
     np.save(AI_INAME_FILE, iname_con)
 
 assert sys.version_info >= (3,5)
+pa.create_necessary_folders()
 resize_keep_ratio()
     
     
