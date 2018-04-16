@@ -7,12 +7,8 @@ import gpu_network
 import numpy as np
 
 
-
-        
-        
-
 def main(argv=None):
-    save_evaluated_heatmaps()
+    pass
 
 if __name__ == "__main__":
     tf.app.run()

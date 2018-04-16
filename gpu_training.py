@@ -13,7 +13,10 @@ import gpu_pipeline
 import gpu_network
 import parameters
 
-BATCH_SIZE = 15
+FLAGS = tf.flags.FLAGS
+tf.flags.DEFINE_integer('batch_size', 15, "Batch size for training")
+
+BATCH_SIZE = FLAGS.batch_size
 LEARNING_RATE = 0.0008
 
 
@@ -52,6 +55,7 @@ def print_log(loss_num, g_step_num, lr_num, itr):
         print(log_dict)
 
 def main(argv=None):
+    print("Training with batch size: " + str(BATCH_SIZE))
     # Place Holder
     PH, PW = parameters.PH, parameters.PW
     ipjc_holder = tf.placeholder(tf.float32, [BATCH_SIZE, 8, 6, 3])
