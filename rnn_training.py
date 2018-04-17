@@ -58,7 +58,7 @@ def main(argv=None):
     cpm_var = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
     poseNet.set_var_trainable(True)
     poseNet.rnn_conv_input()
-    loss_tensor, pred_tensor = poseNet.rnn_with_batch_one(label_onehot)
+    loss_tensor, pred_tensor = poseNet.rnn_with_batch_one(label_onehot) # pred: [time_step, batch, n_classes]
     lgdts_tensor = build_training_ops(loss_tensor)
     
     # Session Saver summary_writer
@@ -79,6 +79,13 @@ def main(argv=None):
     
     summary_writer = tf.summary.FileWriter("rnn_logs/summary", sess.graph)
 
+    # model evaluation
+    btc_pred = tf.transpose(pred_tensor, [1,0,2])
+    btc_pred_max = tf.argmax(btc_pred, 2)
+    l_max = tf.argmax(label_onehot, 2)
+    correct_prediction = tf.equal(tf.argmax(btc_pred, 2), tf.argmax(label_onehot, 2))
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
     # Load video
     vgen = video_utils.video_frame_class_gen(1, TIME_STEP)
     for itr in range(1, int(1e7)):
@@ -90,10 +97,14 @@ def main(argv=None):
     
         # Summary
         if itr % 100 == 0:
-            summary_str = sess.run(lgdts_tensor[4], feed_dict=feed_dict)
-            summary_writer.add_summary(summary_str, g_step_num)
+            btc_pred_num, l_max_num, acc = sess.run([btc_pred_max, l_max, accuracy], feed_dict=feed_dict)
+            print("pred:  "+str(btc_pred_num))
+            print("label: "+str(l_max_num))
+            print("accuracy: " + str(acc))
+            # summary_str = sess.run(lgdts_tensor[4], feed_dict=feed_dict)
+            # summary_writer.add_summary(summary_str, g_step_num)
         
-            rnn_saver.save(sess, "rnn_logs/")
+            rnn_saver.save(sess, "rnn_logs/ckpt")
             print('Model Saved.')
 
     sess.close()
