@@ -44,7 +44,7 @@ def print_log(loss_num, g_step_num, lr_num, itr):
 def main(argv=None):
     TIME_STEP = 15
     RNN_BATCH_SIZE = 2
-    NUM_CLASSES = 8
+    NUM_CLASSES = 9
     BUFFER = TIME_STEP * RNN_BATCH_SIZE
 
     img_holder = tf.placeholder(tf.float32, [TIME_STEP, pa.PH, pa.PW, 3])
@@ -93,7 +93,7 @@ def main(argv=None):
             summary_str = sess.run(lgdts_tensor[4], feed_dict=feed_dict)
             summary_writer.add_summary(summary_str, g_step_num)
         
-            rnn_saver.save(sess, "logs/rnn_ckpt")
+            rnn_saver.save(sess, "rnn_logs/")
             print('Model Saved.')
 
     sess.close()
