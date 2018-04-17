@@ -28,15 +28,15 @@ def test():
 # viewer = ImageViewer(video[-1])
 # viewer.show()
 
-def _class_per_frame(srt, total_frames):
+def _class_per_frame(srt, total_frames, frame_rate):
     """
-    Convert srt subtitle to class per frame array assuming constant frame rate of 30
+    Convert srt subtitle to class per frame
     :param srt: subtitle path
     :return: class per frame array
     """
     subs = pysrt.open(srt)
     # Time of each frame (Millisecond)
-    time_of_frame_list = [time / 30 * 1000 for time in range(total_frames)]
+    time_of_frame_list = [time / frame_rate * 1000 for time in range(total_frames)]
     
     def class_of_one_frame(frame_num):
         """
@@ -157,7 +157,7 @@ def video_frame_class_gen(batch_size, time_steps):
     frames = None
     
     num_frames = len(frames_resize)
-    labels = _class_per_frame(srt_path, num_frames)
+    labels = _class_per_frame(srt_path, num_frames, 15)# Frame rate 15!
     while True:
         start_idx_list = np.random.randint(0, num_frames - time_steps, size=batch_size)
         # [B,T,H,W,C]
