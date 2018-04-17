@@ -1,5 +1,6 @@
 import tensorflow as tf
-import tensorflow.contrib.layers as layers
+from tensorflow.contrib import layers
+from tensorflow.contrib import rnn
 
 class PoseNet:
     def __init__(self):
@@ -7,7 +8,7 @@ class PoseNet:
         self.next_layer_input = None  # Input for next self.conv()
         self.var_trainable = True
     
-    def __set_var_trainable(self, trainable):
+    def set_var_trainable(self, trainable):
         """
         Toggle variants between trainable and un-trainable
         :param trainable: bool
@@ -34,11 +35,11 @@ class PoseNet:
         self.next_layer_input = c
         return self
 
-    def conv(self, filters, kernel_size, name, relu=True):
+    def conv(self, filters, kernel_size, name, relu=True, padding='SAME'):
         if relu:
-            c = layers.conv2d(self.next_layer_input, filters, kernel_size, activation_fn=tf.nn.relu, scope=name, trainable=self.var_trainable)
+            c = layers.conv2d(self.next_layer_input, filters, kernel_size, activation_fn=tf.nn.relu, scope=name, trainable=self.var_trainable, padding=padding)
         else:
-            c = layers.conv2d(self.next_layer_input, filters, kernel_size, activation_fn=None, scope=name, trainable=self.var_trainable)
+            c = layers.conv2d(self.next_layer_input, filters, kernel_size, activation_fn=None, scope=name, trainable=self.var_trainable, padding='SAME')
         self.layer_dict[name] = c
         self.next_layer_input = c
         return self
@@ -124,8 +125,8 @@ class PoseNet:
              .conv(6, 1, 'mconv7_stage3_l2', relu=False)
          )
 
-        self.concat(['mconv7_stage3_l1', 'mconv7_stage3_l2'], 'output')
-        return self.layer_dict['output']
+        self.concat(['mconv7_stage3_l1', 'mconv7_stage3_l2'], 'paf_pcm_output')
+        return self.layer_dict['paf_pcm_output']
 
     def _loss_paf_pcm(self, batch_pcm, batch_paf):
         """
@@ -181,3 +182,65 @@ class PoseNet:
         self._add_paf_summary()
         return total_loss
         
+    def rnn_conv_input(self): # TODO: don't forget to put trainable before this layer to false
+        """
+        Conv layers as the input of rnn network
+        :return: [B, 1, 1, 40] tensor with 40 features for each image
+        """
+        paf_pcm = self.layer_dict['paf_pcm_output']
+        pcm = paf_pcm[:, :, :, 10:16]
+        self.layer_dict['pcm_output'] = pcm # Only use part confidence map
+        assert(paf_pcm is not None, 'Build CPM network before calling rnn conv!')
+        assert(paf_pcm.get_shape().as_list()[1:4] == [64, 64, 16])
+        (self.feed('pcm_output')
+         .conv(16, 3, 'rconv1')
+         .max_pool('pool_1_rnn') # 32
+         .conv(24, 3, 'rconv2')
+         .max_pool('pool_2_rnn') # 16
+         .conv(32, 3, 'rconv3')
+         .conv(32, 3, 'rconv4')
+         .max_pool('pool_3_rnn') # 8
+         .conv(40, 3, 'rconv5')
+         .conv(40, 3, 'rconv6')
+         .max_pool('pool_4_rnn') # 4
+         .conv(40, 4, 'rconv7', padding='VALID')) # [B, 1, 1, 40]
+        assert(self.layer_dict['rconv7'].get_shape().as_list()[1:4] == [1, 1, 40])
+        return self.layer_dict['rconv7']
+    
+    def rnn_with_batch_one(self, batch_time_class):
+        rconv7 = self.layer_dict['rconv7']
+        img_batch_size = rconv7.get_shape().as_list()[0]
+        img_features = tf.reshape(rconv7, [1, img_batch_size, 40]) # time, consecutive images, features
+        return build_rnn_network(img_features, batch_time_class)
+        
+        
+        
+def build_rnn_network(batch_time_input, batch_time_class):
+    """
+    build rnn network
+    :param batch_time_input: [batch, time_step, n_input]
+    :param batch_time_class: [batch, time_step, n_classes]
+    :return:loss, prediction_list
+    """
+    n_classes = batch_time_class.get_shape().as_list()[2]
+    num_units = 64
+    assert(batch_time_input.get_shape().as_list()[1] == batch_time_class.get_shape().as_list()[1])
+    input_list = tf.unstack(batch_time_input, axis=1) # list [time_step][batch, n_classes]
+    lstm_layer = rnn.BasicLSTMCell(num_units=num_units)
+    lstm_outputs, _ = rnn.static_rnn(lstm_layer, input_list, dtype=tf.float32) # list [time_step][batch, n_units]
+    
+    # Fully connect outputs to class_num
+    # weights and biases of fully connected layer
+    out_weights=tf.Variable(tf.random_normal([num_units,n_classes]))
+    out_bias=tf.Variable(tf.random_normal([n_classes]))
+    
+    # Each output multiply by same fc layer:  list [time_step][batch, n_outputs]
+    lstm_prediction_list = [tf.matmul(output,out_weights) + out_bias for output in lstm_outputs]
+    # Labels list: [t][b, classes]
+    t_bc_label_list = tf.unstack(batch_time_class, axis=1)
+    time_batch_loss_list = []
+    for i in range(len(lstm_prediction_list)):
+        time_batch_loss = tf.nn.softmax_cross_entropy_with_logits_v2(logits=lstm_prediction_list[i], labels=t_bc_label_list[i])
+        time_batch_loss_list.append(time_batch_loss)
+    loss = tf.reduce_mean(time_batch_loss_list)
+    return loss, lstm_prediction_list

@@ -3,7 +3,7 @@ from skimage.viewer import ImageViewer
 import pysrt
 import tensorflow as tf
 import sys
-import parameters
+import parameters as pa
 import gpu_pipeline
 import gpu_network
 import numpy as np
@@ -12,7 +12,6 @@ from PIL import Image
 
 assert sys.version_info >= (3, 5)
 
-# video = skvideo.io.vread("dataset/policepose_video/20180412.mp4")#,num_frames=4*1800)
 def test():
     videogen = skvideo.io.vreader("dataset/policepose_video/20180412.m4v")
     for frame in videogen:
@@ -29,7 +28,7 @@ def test():
 # viewer = ImageViewer(video[-1])
 # viewer.show()
 
-def class_per_frame(srt, total_frames):
+def _class_per_frame(srt, total_frames):
     """
     Convert srt subtitle to class per frame array assuming constant frame rate of 30
     :param srt: subtitle path
@@ -50,10 +49,10 @@ def class_per_frame(srt, total_frames):
         # No subtitle annotated
         return "0"
     
-    frame_class_list = [[num, class_of_one_frame(num)] for num in range(total_frames)]
-    return frame_class_list
+    class_list = [class_of_one_frame(num) for num in range(total_frames)]
+    return class_list
 
-
+# Deprecated
 def video_frame_generator(video_path):
     videogen = skvideo.io.vreader(video_path)
     for frame in videogen:
@@ -82,11 +81,12 @@ def resize_keep_ratio(img, ori_size, new_size):
     re_im = re_im.resize((PW, PH), Image.ANTIALIAS)
     return np.asarray(re_im)
 
+# Deprecated
 def save_evaluated_heatmaps():
-    parameters.create_necessary_folders()
+    pa.create_necessary_folders()
     batch_size = 10
     # Place Holder
-    PH, PW = parameters.PH, parameters.PW
+    PH, PW = pa.PH, pa.PW
     img_holder = tf.placeholder(tf.float32, [10, PH, PW, 3])
     # Entire network
     paf_pcm_tensor = gpu_network.PoseNet().inference_paf_pcm(img_holder)
@@ -108,7 +108,7 @@ def save_evaluated_heatmaps():
                 feed_dict = {img_holder: frame}
                 paf_pcm = sess.run(paf_pcm_tensor, feed_dict=feed_dict)
 
-                save_folder_path = os.path.join(parameters.RNN_SAVED_HEATMAP_PATH, folder_name)
+                save_folder_path = os.path.join(pa.RNN_SAVED_HEATMAP_PATH, folder_name)
                 if not os.path.exists(save_folder_path):
                     os.makedirs(save_folder_path)
                 save_path = os.path.join(save_folder_path, str(frame_num) + ".npy")
@@ -116,26 +116,52 @@ def save_evaluated_heatmaps():
                 print(save_path)
         
         # Load frame from video
-        for video_name in parameters.VIDEO_LIST:
-            video_path = os.path.join(parameters.VIDEO_FOLDER_PATH, video_name + ".m4v")
+        for video_name in pa.VIDEO_LIST:
+            video_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".m4v")
             video_gen = skvideo.io.vreader(video_path)
             
             for num, frame in enumerate(video_gen):
                 frame = np.asarray(frame, dtype=np.float32)
-                frame = resize_keep_ratio(frame,(frame.shape[1], frame.shape[0]) ,(parameters.PW, parameters.PH))
+                frame = resize_keep_ratio(frame,(frame.shape[1], frame.shape[0]) ,(pa.PW, pa.PH))
                 frame = frame / 255.
                 frame = frame[np.newaxis, :, :, :]
                 save_frame_paf_pcm_to_file(frame, video_name, num)
 
-
+# Deprecated
 def load_evaluated_heatmaps(batch_size):
-    for video_name in parameters.VIDEO_LIST:
-        video_path = os.path.join(parameters.VIDEO_FOLDER_PATH, video_name + ".m4v")
-        paf_path = os.path.join(parameters.RNN_SAVED_HEATMAP_PATH, video_name)
-        srt_path = os.path.join(parameters.VIDEO_FOLDER_PATH, video_name + ".srt")
+    for video_name in pa.VIDEO_LIST:
+        video_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".m4v")
+        paf_path = os.path.join(pa.RNN_SAVED_HEATMAP_PATH, video_name)
+        srt_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".srt")
 
         metadata = skvideo.io.ffprobe(video_path)
         total_frame_num = metadata["video"]["@nb_frames"]
-
-save_evaluated_heatmaps()
     
+def video_frame_class_gen(batch_size, time_steps):
+    """
+    Generate frames with corresponding labels
+    :param batch_size: RNN batch size
+    :param time_steps: Consecutive frames for 1 batch
+    :return:
+    """
+    video_name = pa.VIDEO_LIST[0]
+    video_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".m4v")
+    srt_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".srt")
+    frames = skvideo.io.vread(video_path)[0:1800] #TODO: This is just for test!
+    frames_resize = []
+    for num, frame in enumerate(frames):
+        frame = np.asarray(frame, dtype=np.float32)
+        frame = resize_keep_ratio(frame, (frame.shape[1], frame.shape[0]), (pa.PW, pa.PH))
+        frame = frame / 255.
+        frames_resize.append(frame)
+    frames = None
+    
+    num_frames = len(frames_resize)
+    labels = _class_per_frame(srt_path, num_frames)
+    while True:
+        start_idx_list = np.random.randint(0, num_frames - time_steps, size=batch_size)
+        # [B,T,H,W,C]
+        batch_time_frames = [frames_resize[start : start + time_steps] for start in start_idx_list]
+        # [B,T]
+        batch_time_labels = [labels[start : start + time_steps] for start in start_idx_list]
+        yield (batch_time_frames, batch_time_labels)
