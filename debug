@@ -10,3 +10,11 @@ plt.imshow(im)
 plt.figure(2)
 plt.imshow(l1[0,:,:,4])
 plt.show()
+
+h = sess.run(paf_pcm, feed_dict)
+
+plt.figure(1)
+plt.imshow(batch_img[3])
+plt.figure(2)
+plt.imshow(h[0,:,:,3])
+plt.show()

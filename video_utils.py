@@ -147,7 +147,7 @@ def video_frame_class_gen(batch_size, time_steps):
     video_name = pa.VIDEO_LIST[0]
     video_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".m4v")
     srt_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".srt")
-    frames = skvideo.io.vread(video_path)[0:1800] #TODO: This is just for test!
+    frames = skvideo.io.vread(video_path)[900:990] #TODO: This is just for test!
     frames_resize = []
     for num, frame in enumerate(frames):
         frame = np.asarray(frame, dtype=np.float32)

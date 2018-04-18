@@ -5,6 +5,7 @@ import parameters as pa
 import gpu_pipeline
 import gpu_network
 import numpy as np
+import matplotlib.pyplot as plt
 
 LEARNING_RATE = 0.0004
 
@@ -53,7 +54,7 @@ def main(argv=None):
     
     poseNet = gpu_network.PoseNet()
     poseNet.set_var_trainable(False)
-    poseNet.inference_paf_pcm(img_holder)
+    paf_pcm = poseNet.inference_paf_pcm(img_holder)
     # Convolutional Pose Machine ended
     cpm_var = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
     poseNet.set_var_trainable(True)
@@ -70,12 +71,14 @@ def main(argv=None):
     else:
         raise FileNotFoundError("Tensorflow ckpt not found")
     
+    all_var = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES)
+    rnn_var = [var for var in all_var if var not in cpm_var]
     rnn_saver = tf.train.Saver()
     rnn_ckpt = tf.train.get_checkpoint_state("rnn_logs/")
     if rnn_ckpt:
         rnn_saver.restore(sess, rnn_ckpt.model_checkpoint_path)
     else:
-        sess.run(tf.global_variables_initializer())
+        sess.run(tf.variables_initializer(rnn_var))
     
     summary_writer = tf.summary.FileWriter("rnn_logs/summary", sess.graph)
 
