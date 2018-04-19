@@ -88,7 +88,7 @@ def main(argv=None):
         print_log(loss_num, g_step_num, lr_num, itr)
         
         # Summary
-        if itr % 50 == 0:
+        if itr % 100 == 0:
             summary_str = sess.run(lgdts_tensor[4], feed_dict=feed_dict)
             summary_writer.add_summary(summary_str, g_step_num)
 

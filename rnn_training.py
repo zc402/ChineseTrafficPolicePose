@@ -6,8 +6,13 @@ import gpu_pipeline
 import gpu_network
 import numpy as np
 import matplotlib.pyplot as plt
+import skvideo.io
+import os
+import pysrt
 
 LEARNING_RATE = 0.0004
+FLAGS = tf.flags.FLAGS
+tf.flags.DEFINE_string('mode', "train", "Train or test mode")
 
 def build_training_ops(loss_tensor):
     """
@@ -41,6 +46,25 @@ def print_log(loss_num, g_step_num, lr_num, itr):
     log_dict['Learning Rate'] = lr_num
     if itr % INTERVAL == 0:
         print(log_dict)
+
+def test_mode(sess, img_holder, btc_pred_max):
+    police_dict={0:"--", 1:"STOP", 2:"PASS", 3:"TURN LEFT", 4:"LEFT WAIT", 5:"TURN RIGHT", 6:"CNG LANE", 7:"SLOW DOWN", 8: "GET OFF"}
+    metadata = skvideo.io.ffprobe(os.path.join(pa.VIDEO_FOLDER_PATH, "test.mp4"))
+    total_frames = metadata["video"]["@nb_frames"]
+    pred_list = []
+    for i in range(0, total_frames-15, 15):
+        frames = video_utils.test_video_frames(15) / 255.
+        feed_dict = {img_holder: frames}
+        btc_pred_num = sess.run(btc_pred_max, feed_dict=feed_dict)
+        pred = np.reshape(btc_pred_num, [-1])
+        pred_list.append(pred)
+    file = pysrt.SubRipFile()
+    for i, str in pred_list:
+        start = '00:'+str(i%(15*60))+':'+str(i%(15))+':'+str(1000//15 * i)
+        end = '00:'+str(i%(15*60))+':'+str(i%(15))+':'+str(1000//15 * i + 15)
+        sub = pysrt.SubRipItem(i, start=start, end=end, text=police_dict[int(str)])
+        file.append(sub)
+        file.save(os.path.join(pa.VIDEO_FOLDER_PATH, 'test.srt'))
     
 def main(argv=None):
     TIME_STEP = 15
@@ -89,6 +113,11 @@ def main(argv=None):
     correct_prediction = tf.equal(tf.argmax(btc_pred, 2), tf.argmax(label_onehot, 2))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
+    if 'test' in FLAGS.mode:
+        test_mode(sess, img_holder, btc_pred_max)
+        sess.close()
+        exit(0)
+
     # Load video
     vgen = video_utils.video_frame_class_gen(1, TIME_STEP)
     for itr in range(1, int(1e7)):
@@ -99,7 +128,7 @@ def main(argv=None):
         print_log(loss_num, g_step_num, lr_num, itr)
     
         # Summary
-        if itr % 100 == 0:
+        if itr % 50 == 0:
             btc_pred_num, l_max_num, acc = sess.run([btc_pred_max, l_max, accuracy], feed_dict=feed_dict)
             print("pred:  "+str(btc_pred_num))
             print("label: "+str(l_max_num))

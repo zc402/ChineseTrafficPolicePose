@@ -165,3 +165,7 @@ def video_frame_class_gen(batch_size, time_steps):
         # [B,T]
         batch_time_labels = [labels[start : start + time_steps] for start in start_idx_list]
         yield (batch_time_frames, batch_time_labels)
+
+def test_video_frames(num_img):
+    vgen = skvideo.io.vreader(os.path.join(pa.VIDEO_FOLDER_PATH, "test.mp4"))
+    yield [vgen.next() in range(num_img)]
