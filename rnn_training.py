@@ -58,7 +58,7 @@ def test_mode(sess, img_holder, btc_pred_max, batch_size):
         feed_dict = {img_holder: frames[i:i+batch_size]}
         btc_pred_num = sess.run(btc_pred_max, feed_dict=feed_dict)
         pred = np.reshape(btc_pred_num, [-1])
-        pred_list.append(pred)
+        [pred_list.append(p) for p in pred]
         print("batch "+ str(i) +" done")
     file = pysrt.SubRipFile()
     for i, item in enumerate(pred_list):
