@@ -53,8 +53,8 @@ def test_mode(sess, img_holder, btc_pred_max, batch_size):
     total_frames = int(metadata["video"]["@nb_frames"])
     pred_list = []
     frames = skvideo.io.vread(os.path.join(pa.VIDEO_FOLDER_PATH, "test.mp4"))
+    frames = frames / 255.
     for i in range(0, total_frames-batch_size, batch_size):
-        frames = frames / 255.
         feed_dict = {img_holder: frames[i:i+batch_size]}
         btc_pred_num = sess.run(btc_pred_max, feed_dict=feed_dict)
         pred = np.reshape(btc_pred_num, [-1])
