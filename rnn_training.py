@@ -61,12 +61,12 @@ def test_mode(sess, img_holder, btc_pred_max, batch_size):
         pred_list.append(pred)
         print("batch "+ str(i) +" done")
     file = pysrt.SubRipFile()
-    for i, item in pred_list:
+    for i, item in enumerate(pred_list):
         start = '00:'+item(i%(15*60))+':'+item(i%(15))+':'+item((1000//15 * i)%1000)
         end = '00:'+item(i%(15*60))+':'+item(i%(15))+':'+item((1000//15 * i + 14)%1000)
         sub = pysrt.SubRipItem(i, start=start, end=end, text=police_dict[int(item)])
         file.append(sub)
-        file.save(os.path.join(pa.VIDEO_FOLDER_PATH, 'test.srt'))
+    file.save(os.path.join(pa.VIDEO_FOLDER_PATH, 'test.srt'))
     
 def main(argv=None):
     TIME_STEP = 15
