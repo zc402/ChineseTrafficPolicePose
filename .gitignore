@@ -4,3 +4,4 @@ dataset
 *.pyc
 __pycache__
 vgg19.npy
+*.mp4

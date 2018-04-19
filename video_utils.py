@@ -9,24 +9,10 @@ import gpu_network
 import numpy as np
 import os
 from PIL import Image
+from skimage.draw import line_aa
+
 
 assert sys.version_info >= (3, 5)
-
-def test():
-    videogen = skvideo.io.vreader("dataset/policepose_video/20180412.m4v")
-    for frame in videogen:
-        viewer = ImageViewer(frame)
-        viewer.show()
-
-# print(video.shape)
-
-# metadata = skvideo.io.ffprobe("dataset/policepose_video/20180412.m4v")
-# print(metadata.keys())
-# print(json.dumps(metadata["video"], indent=4))
-# total_frames = metadata["video"]["@nb_frames"]
-
-# viewer = ImageViewer(video[-1])
-# viewer.show()
 
 def _class_per_frame(srt, total_frames, frame_rate):
     """
@@ -81,16 +67,29 @@ def resize_keep_ratio(img, ori_size, new_size):
     re_im = re_im.resize((PW, PH), Image.ANTIALIAS)
     return np.asarray(re_im)
 
-# Deprecated
-def save_evaluated_heatmaps():
+def save_joints_position():
+    """
+    Save joints position from a video to file
+    :return:
+    """
     pa.create_necessary_folders()
     batch_size = 10
+    video_path = os.path.join(pa.VIDEO_FOLDER_PATH, pa.VIDEO_LIST[0] + ".mp4")
+    metadata = skvideo.io.ffprobe(video_path)
+    total_frames = int(metadata["video"]["@nb_frames"])
+
+    v_width = int(metadata["video"]["@width"])
+    v_height = int(metadata["video"]["@height"])
+    assert(v_height == pa.PH and v_width == pa.PW)
+    v_gen = skvideo.io.vreader(video_path)
+
     # Place Holder
-    PH, PW = pa.PH, pa.PW
-    img_holder = tf.placeholder(tf.float32, [10, PH, PW, 3])
+    img_holder = tf.placeholder(tf.float32, [batch_size, v_height, v_width, 3])
     # Entire network
     paf_pcm_tensor = gpu_network.PoseNet().inference_paf_pcm(img_holder)
     
+    # Place for argmax values
+    joint_ixy = list() # [i][j1~6][x,y]
     # Session Saver summary_writer
     with tf.Session() as sess:
         saver = tf.train.Saver()
@@ -102,36 +101,66 @@ def save_evaluated_heatmaps():
         
         # Close the graph so no op can be added
         tf.get_default_graph().finalize()
-        
-        # Save a single frame to np array
-        def save_frame_paf_pcm_to_file(frame, folder_name, frame_num):
-                feed_dict = {img_holder: frame}
-                paf_pcm = sess.run(paf_pcm_tensor, feed_dict=feed_dict)
 
-                save_folder_path = os.path.join(pa.RNN_SAVED_HEATMAP_PATH, folder_name)
-                if not os.path.exists(save_folder_path):
-                    os.makedirs(save_folder_path)
-                save_path = os.path.join(save_folder_path, str(frame_num) + ".npy")
-                np.save(save_path, paf_pcm)
-                print(save_path)
-        
-        # Load frame from video
-        for video_name in pa.VIDEO_LIST:
-            video_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".m4v")
-            video_gen = skvideo.io.vreader(video_path)
+        for i in range(0, total_frames - batch_size + 1, batch_size):
+            frames = [next(v_gen)/255. for _ in range(batch_size)]
+            feed_dict = {img_holder: frames}
+            paf_pcm = sess.run(paf_pcm_tensor, feed_dict=feed_dict)
+            pcm = paf_pcm[:,:,:,10:]
+            pcm = np.clip(pcm, 0., 1.)
+            for idx_img in range(batch_size):
+                # 6 joint in image
+                img_j6 = []
+                for idx_joint in range(6):
+                    heat = pcm[idx_img,:,:,idx_joint]
+                    c_coor_1d = np.argmax(heat)
+                    c_coor_2d = np.unravel_index(c_coor_1d, [pa.HEAT_SIZE[1], pa.HEAT_SIZE[0]])
+                    c_value = heat[c_coor_2d]
+                    j_xy = [] # x,y
+                    if c_value > 0.3:
+                        percent_h = c_coor_2d[0] / pa.HEAT_H
+                        percent_w = c_coor_2d[1] / pa.HEAT_W
+                        j_xy.append(percent_w)
+                        j_xy.append(percent_h)
+                    else:
+                        j_xy.append(-1.)
+                        j_xy.append(-1.)
+                    img_j6.append(j_xy)
+                joint_ixy.append(img_j6)
+            print("Image: "+str(i))
+    # sess closed
+    save_path = os.path.join(pa.RNN_SAVED_JOINTS_PATH, pa.VIDEO_LIST[0] + ".npy")
+    np.save(save_path, joint_ixy)
+    print(save_path)
+
+def skeleton_video():
+    map_h = 32
+    map_w = 32
+    joint_data_path = os.path.join(pa.RNN_SAVED_JOINTS_PATH, pa.VIDEO_LIST[0] + ".npy")
+    joint_data = np.load(joint_data_path)
+    video = []
+    for joint_xy in joint_data:
+        # Inside one image
+        frame = np.zeros([map_h, map_w], dtype=np.uint8)
+        for i in range(5): # 01234
+            if np.less(joint_xy[i:i+2, :], 0).any(): continue # no detection
+            x1 = int(joint_xy[i, 0] * map_w)
+            y1 = int(joint_xy[i, 1] * map_h)
+            x2 = int(joint_xy[i+1, 0] * map_w)
+            y2 = int(joint_xy[i+1, 1] * map_h)
+            rr, cc, val = line_aa(y1,x1,y2,x2)
+            frame[rr, cc] = 255
+        video.append(frame)
+    skvideo.io.vwrite("skeleton.mp4", video, outputdict={
+      '-r': '15'})
             
-            for num, frame in enumerate(video_gen):
-                frame = np.asarray(frame, dtype=np.float32)
-                frame = resize_keep_ratio(frame,(frame.shape[1], frame.shape[0]) ,(pa.PW, pa.PH))
-                frame = frame / 255.
-                frame = frame[np.newaxis, :, :, :]
-                save_frame_paf_pcm_to_file(frame, video_name, num)
-
+            
+        
 # Deprecated
 def load_evaluated_heatmaps(batch_size):
     for video_name in pa.VIDEO_LIST:
         video_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".m4v")
-        paf_path = os.path.join(pa.RNN_SAVED_HEATMAP_PATH, video_name)
+        paf_path = os.path.join(pa.RNN_SAVED_JOINTS_PATH, video_name)
         srt_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".srt")
 
         metadata = skvideo.io.ffprobe(video_path)
@@ -169,3 +198,4 @@ def video_frame_class_gen(batch_size, time_steps):
 def test_video_frames(num_img):
     vgen = skvideo.io.vreader(os.path.join(pa.VIDEO_FOLDER_PATH, "test.mp4"))
     yield [vgen.next() in range(num_img)]
+

@@ -4,6 +4,7 @@ from tensorflow.contrib import rnn
 
 class PoseNet:
     def __init__(self):
+        print("Don't Forget To Set Input Scale To .0 ~ .1")
         self.layer_dict = {}
         self.next_layer_input = None  # Input for next self.conv()
         self.var_trainable = True
