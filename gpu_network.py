@@ -193,17 +193,14 @@ class PoseNet:
         assert(paf_pcm is not None, 'Build CPM network before calling rnn conv!')
         assert(paf_pcm.get_shape().as_list()[1:4] == [64, 64, 16])
         (self.feed('pcm_output')
-         .conv(16, 3, 'rconv1')
          .max_pool('pool_1_rnn') # 32
-         .conv(24, 3, 'rconv2')
+         .conv(16, 3, 'rconv2')
          .max_pool('pool_2_rnn') # 16
-         .conv(32, 3, 'rconv3')
-         .conv(32, 3, 'rconv4')
+         .conv(16, 3, 'rconv3')
          .max_pool('pool_3_rnn') # 8
-         .conv(40, 3, 'rconv5')
-         .conv(40, 3, 'rconv6')
+         .conv(16, 3, 'rconv5')
          .max_pool('pool_4_rnn') # 4
-         .conv(40, 4, 'rconv7', padding='VALID')) # [B, 1, 1, 40]
+         .conv(16, 4, 'rconv7', padding='VALID')) # [B, 1, 1, 40]
         assert(self.layer_dict['rconv7'].get_shape().as_list()[1:4] == [1, 1, 40])
         return self.layer_dict['rconv7']
     
@@ -223,7 +220,7 @@ def build_rnn_network(batch_time_input, batch_time_class):
     :return:loss, prediction_list
     """
     n_classes = batch_time_class.get_shape().as_list()[2]
-    num_units = 64
+    num_units = 32
     assert(batch_time_input.get_shape().as_list()[1] == batch_time_class.get_shape().as_list()[1])
     input_list = tf.unstack(batch_time_input, axis=1) # list [time_step][batch, n_classes]
     lstm_layer = rnn.BasicLSTMCell(num_units=num_units)

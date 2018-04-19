@@ -145,13 +145,13 @@ def video_frame_class_gen(batch_size, time_steps):
     :return:
     """
     video_name = pa.VIDEO_LIST[0]
-    video_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".m4v")
+    video_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".mp4")
     srt_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".srt")
     frames = skvideo.io.vread(video_path)[900:990] #TODO: This is just for test!
     frames_resize = []
     for num, frame in enumerate(frames):
         frame = np.asarray(frame, dtype=np.float32)
-        frame = resize_keep_ratio(frame, (frame.shape[1], frame.shape[0]), (pa.PW, pa.PH))
+        # frame = resize_keep_ratio(frame, (frame.shape[1], frame.shape[0]), (pa.PW, pa.PH))
         frame = frame / 255.
         frames_resize.append(frame)
     frames = None
