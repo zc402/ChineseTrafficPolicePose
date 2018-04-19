@@ -201,13 +201,13 @@ class PoseNet:
          .conv(16, 3, 'rconv5')
          .max_pool('pool_4_rnn') # 4
          .conv(16, 4, 'rconv7', padding='VALID')) # [B, 1, 1, 40]
-        assert(self.layer_dict['rconv7'].get_shape().as_list()[1:4] == [1, 1, 40])
+        assert(self.layer_dict['rconv7'].get_shape().as_list()[1:3] == [1, 1])
         return self.layer_dict['rconv7']
     
     def rnn_with_batch_one(self, batch_time_class):
         rconv7 = self.layer_dict['rconv7']
         img_batch_size = rconv7.get_shape().as_list()[0]
-        img_features = tf.reshape(rconv7, [1, img_batch_size, 40]) # time, consecutive images, features
+        img_features = tf.reshape(rconv7, [1, img_batch_size, -1]) # time, consecutive images, features
         return build_rnn_network(img_features, batch_time_class)
         
         
