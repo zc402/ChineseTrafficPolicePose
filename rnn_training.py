@@ -47,14 +47,15 @@ def print_log(loss_num, g_step_num, lr_num, itr):
     if itr % INTERVAL == 0:
         print(log_dict)
 
-def test_mode(sess, img_holder, btc_pred_max):
+def test_mode(sess, img_holder, btc_pred_max, batch_size):
     police_dict={0:"--", 1:"STOP", 2:"PASS", 3:"TURN LEFT", 4:"LEFT WAIT", 5:"TURN RIGHT", 6:"CNG LANE", 7:"SLOW DOWN", 8: "GET OFF"}
     metadata = skvideo.io.ffprobe(os.path.join(pa.VIDEO_FOLDER_PATH, "test.mp4"))
-    total_frames = metadata["video"]["@nb_frames"]
+    total_frames = int(metadata["video"]["@nb_frames"])
     pred_list = []
-    for i in range(0, total_frames-15, 15):
-        frames = video_utils.test_video_frames(15) / 255.
-        feed_dict = {img_holder: frames}
+    frames = skvideo.io.vread(os.path.join(pa.VIDEO_FOLDER_PATH, "test.mp4"))
+    for i in range(0, total_frames-batch_size, batch_size):
+        frames = frames / 255.
+        feed_dict = {img_holder: frames[i:i+batch_size]}
         btc_pred_num = sess.run(btc_pred_max, feed_dict=feed_dict)
         pred = np.reshape(btc_pred_num, [-1])
         pred_list.append(pred)
@@ -69,9 +70,7 @@ def test_mode(sess, img_holder, btc_pred_max):
     
 def main(argv=None):
     TIME_STEP = 15
-    RNN_BATCH_SIZE = 2
     NUM_CLASSES = 9
-    BUFFER = TIME_STEP * RNN_BATCH_SIZE
 
     img_holder = tf.placeholder(tf.float32, [TIME_STEP, pa.PH, pa.PW, 3])
     label_holder = tf.placeholder(tf.int32, [1, TIME_STEP])
@@ -115,7 +114,7 @@ def main(argv=None):
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
     if 'test' in FLAGS.mode:
-        test_mode(sess, img_holder, btc_pred_max)
+        test_mode(sess, img_holder, btc_pred_max, TIME_STEP)
         sess.close()
         exit(0)
 
