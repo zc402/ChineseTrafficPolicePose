@@ -134,8 +134,8 @@ def save_joints_position():
     print(save_path)
 
 def skeleton_video():
-    map_h = 32
-    map_w = 32
+    map_h = 512
+    map_w = 512
     joint_data_path = os.path.join(pa.RNN_SAVED_JOINTS_PATH, pa.VIDEO_LIST[0] + ".npy")
     joint_data = np.load(joint_data_path)
     video = []
@@ -151,8 +151,8 @@ def skeleton_video():
             rr, cc, val = line_aa(y1,x1,y2,x2)
             frame[rr, cc] = 255
         video.append(frame)
-    skvideo.io.vwrite("skeleton.mp4", video, outputdict={
-      '-r': '15'})
+    skvideo.io.vwrite("skeleton.mp4", video, inputdict={'-r': '15/1'}, outputdict={
+      '-r': '15/1'})
             
             
         
