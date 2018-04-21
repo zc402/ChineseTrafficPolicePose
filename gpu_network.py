@@ -80,14 +80,14 @@ class PoseNet:
              .conv(128, 3, 'conv_5_2_cpm_l1')
              .conv(128, 3, 'conv_5_3_cpm_l1')
              .conv(512, 1, 'conv_5_4_cpm_l1')
-             .conv(5*2, 1, 'conv_5_5_cpm_l1', relu=False))
+             .conv(6*2, 1, 'conv_5_5_cpm_l1', relu=False))
 
         (self.feed('conv_4_4_cpm')
              .conv(128, 3, 'conv_5_1_cpm_l2')
              .conv(128, 3, 'conv_5_2_cpm_l2')
              .conv(128, 3, 'conv_5_3_cpm_l2')
              .conv(512, 1, 'conv_5_4_cpm_l2')
-             .conv(6, 1, 'conv_5_5_cpm_l2', relu=False))
+             .conv(8, 1, 'conv_5_5_cpm_l2', relu=False))
 
         (self.concat(['conv_5_5_cpm_l1', 'conv_5_5_cpm_l2', 'conv_4_4_cpm'], 'concat_stage2')
              .conv(128, 7, 'mconv1_stage2_l1')
@@ -96,7 +96,7 @@ class PoseNet:
              .conv(128, 7, 'mconv4_stage2_l1')
              .conv(128, 7, 'mconv5_stage2_l1')
              .conv(128, 1, 'mconv6_stage2_l1')
-             .conv(5*2, 1, 'mconv7_stage2_l1', relu=False))
+             .conv(6*2, 1, 'mconv7_stage2_l1', relu=False))
 
         (self.feed('concat_stage2')
              .conv(128, 7, 'mconv1_stage2_l2')
@@ -105,7 +105,7 @@ class PoseNet:
              .conv(128, 7, 'mconv4_stage2_l2')
              .conv(128, 7, 'mconv5_stage2_l2')
              .conv(128, 1, 'mconv6_stage2_l2')
-             .conv(6, 1, 'mconv7_stage2_l2', relu=False)
+             .conv(8, 1, 'mconv7_stage2_l2', relu=False)
          )
 
         (self.concat(['mconv7_stage2_l1', 'mconv7_stage2_l2', 'conv_4_4_cpm'], 'concat_stage3')
@@ -115,7 +115,7 @@ class PoseNet:
              .conv(128, 7, 'mconv4_stage3_l1')
              .conv(128, 7, 'mconv5_stage3_l1')
              .conv(128, 1, 'mconv6_stage3_l1')
-             .conv(5*2, 1, 'mconv7_stage3_l1', relu=False))
+             .conv(6*2, 1, 'mconv7_stage3_l1', relu=False))
         (self.feed('concat_stage3')
              .conv(128, 7, 'mconv1_stage3_l2')
              .conv(128, 7, 'mconv2_stage3_l2')
@@ -123,7 +123,7 @@ class PoseNet:
              .conv(128, 7, 'mconv4_stage3_l2')
              .conv(128, 7, 'mconv5_stage3_l2')
              .conv(128, 1, 'mconv6_stage3_l2')
-             .conv(6, 1, 'mconv7_stage3_l2', relu=False)
+             .conv(8, 1, 'mconv7_stage3_l2', relu=False)
          )
 
         self.concat(['mconv7_stage3_l1', 'mconv7_stage3_l2'], 'paf_pcm_output')
@@ -132,8 +132,8 @@ class PoseNet:
     def _loss_paf_pcm(self, batch_pcm, batch_paf):
         """
         Use pose inference to build loss of network
-        :param batch_pcm: [None, H, W, 6]
-        :param batch_paf: [None, H, W, 10]
+        :param batch_pcm: [None, H, W, 8]
+        :param batch_paf: [None, H, W, 12]
         :return: total loss value
         """
         batch_size = batch_pcm.get_shape().as_list()[0]
@@ -148,11 +148,11 @@ class PoseNet:
             if 'mconv7' in layer_name and '_l2' in layer_name:
                 l2s.append(self.layer_dict[layer_name])
         for i, l1 in enumerate(l1s):
-            loss = tf.nn.l2_loss(l1 - batch_paf) / batch_size  / 10
+            loss = tf.nn.l2_loss(l1 - batch_paf) / batch_size  / 12
             tf.summary.scalar(name='l1_stage'+str(i+1), tensor=loss)
             l1s_loss.append(loss)
         for i, l2 in enumerate(l2s):
-            loss = tf.nn.l2_loss(l2 - batch_pcm) / batch_size / 6
+            loss = tf.nn.l2_loss(l2 - batch_pcm) / batch_size / 8
             tf.summary.scalar(name='l2_stage'+str(i+1), tensor=loss)
             l2s_loss.append(loss)
         total_l1_loss = tf.reduce_mean(l1s_loss)
@@ -179,7 +179,7 @@ class PoseNet:
         :return: A scalar loss tensor
         """
         self.inference_paf_pcm(img_tensor)
-        total_loss = self._loss_paf_pcm(i_hv_tensor[:, :, :, :6], i_hv_tensor[:, :, :, 6:])
+        total_loss = self._loss_paf_pcm(i_hv_tensor[:, :, :, :8], i_hv_tensor[:, :, :, 8:])
         self._add_paf_summary()
         return total_loss
         
@@ -188,6 +188,7 @@ class PoseNet:
         Conv layers as the input of rnn network
         :return: [B, 1, 1, 40] tensor with 40 features for each image
         """
+        raise RuntimeError('Deprecated! will be removed')
         paf_pcm = self.layer_dict['paf_pcm_output']
         pcm = paf_pcm[:, :, :, 10:16]
         self.layer_dict['pcm_output'] = pcm # Only use part confidence map

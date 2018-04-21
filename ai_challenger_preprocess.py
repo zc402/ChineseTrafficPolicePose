@@ -23,7 +23,7 @@ AI_IPJC_FILE = "./dataset/gen/ai_ipjc.npy"
 AI_INAME_FILE = "./dataset/gen/ai_iname.npy"
 
 PH, PW = pa.PH, pa.PW
-def resize_keep_ratio():
+def resize_keep_ratio(save_img = True):
     
     label_collection = [SET_A_LABEL, SET_B_LABEL, SET_C_LABEL, SET_D_LABEL]
     img_folder_collection = [SET_A_IMG, SET_B_IMG, SET_C_IMG, SET_D_IMG]
@@ -34,7 +34,7 @@ def resize_keep_ratio():
         # drop images with more than 4 people appeared
         labels = [l for l in labels if len(l['keypoint_annotations'])<=pa.MAX_ALLOWED_PEOPLE]
         num_img = len(labels)
-        ipjc_arr = np.zeros([num_img, pa.MAX_ALLOWED_PEOPLE, 6, 3], np.float32)
+        ipjc_arr = np.zeros([num_img, pa.MAX_ALLOWED_PEOPLE, 6+2, 3], np.float32)
         iname_list = list()
 
         for idx, img_label in enumerate(labels):
@@ -43,24 +43,28 @@ def resize_keep_ratio():
             name = img_label['image_id'] + ".jpg"
             file = os.path.join(img_folder, name)
             im = Image.open(file)
-            np_im = np.asarray(im.convert("RGB"))
+            if save_img:
+                np_im = np.asarray(im.convert("RGB"))
             ori_size = im.size
             ori_ratio = ori_size[0] / ori_size[1]
             if ori_ratio >= target_ratio:
                 # Depends on width
                 zoom_ratio = PW / ori_size[0]
-                bg = np.zeros((int(ori_size[0] / target_ratio), ori_size[0], 3), np.uint8)
+                if save_img:
+                    bg = np.zeros((int(ori_size[0] / target_ratio), ori_size[0], 3), np.uint8)
 
             elif ori_ratio < target_ratio:
                 # Depends on height
                 zoom_ratio = PH / ori_size[1]
-                bg = np.zeros((ori_size[1], int(ori_size[1] * target_ratio), 3), np.uint8)
-                
-            bg[:ori_size[1], :ori_size[0], :] = bg[:ori_size[1], :ori_size[0], :] + np_im[:, :, :]
-            re_im = Image.fromarray(bg, 'RGB')
-            re_im = re_im.resize((PW, PH), Image.ANTIALIAS)
-            out_path = os.path.join(RESIZED_IMG_FOLDER, name)
-            re_im.save(out_path)
+                if save_img:
+                    bg = np.zeros((ori_size[1], int(ori_size[1] * target_ratio), 3), np.uint8)
+
+            if save_img:
+                bg[:ori_size[1], :ori_size[0], :] = bg[:ori_size[1], :ori_size[0], :] + np_im[:, :, :]
+                re_im = Image.fromarray(bg, 'RGB')
+                re_im = re_im.resize((PW, PH), Image.ANTIALIAS)
+                out_path = os.path.join(RESIZED_IMG_FOLDER, name)
+                re_im.save(out_path)
             print(str(idx) + ' ' + name)
             
             # Modify label
@@ -71,7 +75,7 @@ def resize_keep_ratio():
                 anno = np.asarray(anno, dtype=np.int32).reshape([14, 3])
                 # annotation in ai challenger: 0/右肩，1/右肘，2/右腕，3/左肩，4/左肘，5/左腕
                 visible = lambda ai_j: anno[ai_j, 2] == 1 # Looks for visible joints only
-                def set_ipjc(pose_j, ai_j):
+                def set_ipjc(pose_j, ai_j): # pose_j: my structure, ai_j: ai structure
                     ipjc_arr[idx, p, pose_j, 0:2] = anno[ai_j, 0:2] * zoom_ratio
                     ipjc_arr[idx, p, pose_j, 2] = anno[ai_j, 2] # mask or visible are both 1 in annotation
                 
@@ -87,6 +91,10 @@ def resize_keep_ratio():
                     set_ipjc(4, 4)
                 if visible(5):
                     set_ipjc(5, 5)
+                if visible(12): # Head top
+                    set_ipjc(6, 12)
+                if visible(13): # Neck
+                    set_ipjc(7, 13)
                 
         iname_arr = np.asarray(iname_list)
         return [ipjc_arr, iname_arr]
@@ -110,6 +118,6 @@ def resize_keep_ratio():
 
 assert sys.version_info >= (3,5)
 pa.create_necessary_folders()
-resize_keep_ratio()
+resize_keep_ratio(save_img=False)
     
     

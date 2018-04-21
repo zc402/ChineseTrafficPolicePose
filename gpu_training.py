@@ -11,7 +11,7 @@ import sys
 
 import gpu_pipeline
 import gpu_network
-import parameters
+import parameters as pa
 
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_integer('batch_size', 15, "Batch size for training")
@@ -44,21 +44,21 @@ def build_training_ops(loss_tensor):
     return [loss_tensor, global_step, decaying_learning_rate, train_op, summary_op]
 
 
-
 def print_log(loss_num, g_step_num, lr_num, itr):
     INTERVAL = 1
-    log_dict = {}
-    log_dict['Loss'] = loss_num
-    log_dict['Step'] = g_step_num
-    log_dict['Learning Rate'] = lr_num
+    log_dict = {
+        'Loss': loss_num,
+        'Step': g_step_num,
+        'Learning Rate': lr_num
+    }
     if itr % INTERVAL == 0:
         print(log_dict)
 
 def main(argv=None):
     print("Training with batch size: " + str(BATCH_SIZE))
     # Place Holder
-    PH, PW = parameters.PH, parameters.PW
-    ipjc_holder = tf.placeholder(tf.float32, [BATCH_SIZE, 8, 6, 3])
+    PH, PW = pa.PH, pa.PW
+    ipjc_holder = tf.placeholder(tf.float32, [BATCH_SIZE, 8, 6+2, 3])
     img_holder = tf.placeholder(tf.float32, [BATCH_SIZE, PH, PW, 3])
     # Entire network
     img_tensor, i_hv_tensor = gpu_pipeline.build_training_pipeline(ipjc_holder, img_holder)
@@ -75,6 +75,8 @@ def main(argv=None):
     else:
         # Global initializer
         sess.run(tf.global_variables_initializer())
+        pa.create_necessary_folders()
+
     summary_writer = tf.summary.FileWriter("logs/summary", sess.graph)
     
     # Close the graph so no op can be added

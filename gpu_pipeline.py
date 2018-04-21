@@ -52,15 +52,17 @@ def joint_to_bone(ipjc_tensor, pcm_mask):
     :param pcm_mask: [Image] [Person] [Joint]
     :return: ipbpc_tensor, paf_mask
     """
-    # I P B c1, Bone = 0,1,2,3,4
-    ipbp1c = ipjc_tensor[:, :, 0:5, :]
-    # I P B c2, Bone = 1,2,3,4,5
-    ipbp2c = ipjc_tensor[:, :, 1:6, :]
+    # 01 12 23 34 45 *67*
+    # I P B c1, Bone = 0,1,2,3,4,6
+    ipbp1c = tf.concat([ipjc_tensor[:, :, 0:5, :], ipjc_tensor[:, :, 6:7, :]], axis=2)
+    # I P B c2, Bone = 1,2,3,4,5,7
+    ipbp2c = tf.concat([ipjc_tensor[:, :, 1:6, :], ipjc_tensor[:, :, 7:8, :]], axis=2)
     # I P B (p1,p2) c
     ipbpc_tensor = tf.stack([ipbp1c, ipbp2c], axis=3)
     # When either one of joints is 0, bone is masked
-    paf_mask = tf.multiply(pcm_mask[:, :, 0:5] ,pcm_mask[:, :, 1:6], name='paf_mask')
-    
+    paf_mask_arm = tf.multiply(pcm_mask[:, :, 0:5], pcm_mask[:, :, 1:6], name='paf_mask_arm')
+    paf_mask_head = tf.multiply(pcm_mask[:, :, 6:7], pcm_mask[:, :, 7:8], name='paf_mask_head')
+    paf_mask = tf.concat([paf_mask_arm, paf_mask_head], axis=2)
     return ipbpc_tensor, paf_mask
     
 
@@ -116,7 +118,7 @@ def pcm_paf_to_nhwc(pcm, paf):
     Pack picture pcm paf together
     :param pcm: IJHW
     :param paf: IBHWV
-    :return: NHWC (?, H, W, 6+5*2)
+    :return: NHWC (?, H, W, (6+2)+5*2)
     """
     nhwc_pcm = tf.transpose(pcm, [0,2,3,1]) # NHWC
     nhwbv_paf = tf.transpose(paf, [0,2,3,1,4])
