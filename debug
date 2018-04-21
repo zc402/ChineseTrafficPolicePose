@@ -1,6 +1,8 @@
 
 ffmpeg -i dumb.mp4 -vf "scale=512:512:force_original_aspect_ratio=1,pad=512:512:0:0" -strict -2 -r 15 output.mp4
 
+ffmpeg -i dataset/policepose_video/20180412.mp4 -i skeleton.mp4 -filter_complex hstack -strict -2 two_videos.mp4
+
 plt.figure(1)
 plt.imshow(im)
 plt.figure(2)

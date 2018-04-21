@@ -38,12 +38,6 @@ def _class_per_frame(srt, total_frames, frame_rate):
     class_list = [class_of_one_frame(num) for num in range(total_frames)]
     return class_list
 
-# Deprecated
-def video_frame_generator(video_path):
-    videogen = skvideo.io.vreader(video_path)
-    for frame in videogen:
-        viewer = ImageViewer(frame)
-        viewer.show()
 
 def resize_keep_ratio(img, ori_size, new_size):
     assert len(ori_size) == 2
@@ -73,7 +67,7 @@ def save_joints_position():
     :return:
     """
     pa.create_necessary_folders()
-    batch_size = 10
+    batch_size = 15
     video_path = os.path.join(pa.VIDEO_FOLDER_PATH, pa.VIDEO_LIST[0] + ".mp4")
     metadata = skvideo.io.ffprobe(video_path)
     total_frames = int(metadata["video"]["@nb_frames"])
@@ -106,12 +100,12 @@ def save_joints_position():
             frames = [next(v_gen)/255. for _ in range(batch_size)]
             feed_dict = {img_holder: frames}
             paf_pcm = sess.run(paf_pcm_tensor, feed_dict=feed_dict)
-            pcm = paf_pcm[:,:,:,10:]
+            pcm = paf_pcm[:,:,:,12:]
             pcm = np.clip(pcm, 0., 1.)
             for idx_img in range(batch_size):
                 # 6 joint in image
                 img_j6 = []
-                for idx_joint in range(6):
+                for idx_joint in range(8):
                     heat = pcm[idx_img,:,:,idx_joint]
                     c_coor_1d = np.argmax(heat)
                     c_coor_2d = np.unravel_index(c_coor_1d, [pa.HEAT_SIZE[1], pa.HEAT_SIZE[0]])
@@ -133,7 +127,12 @@ def save_joints_position():
     np.save(save_path, joint_ixy)
     print(save_path)
 
+
 def skeleton_video():
+    """
+    Generate skeleton video from joints position file
+    :return:
+    """
     map_h = 512
     map_w = 512
     joint_data_path = os.path.join(pa.RNN_SAVED_JOINTS_PATH, pa.VIDEO_LIST[0] + ".npy")
@@ -150,21 +149,20 @@ def skeleton_video():
             y2 = int(joint_xy[i+1, 1] * map_h)
             rr, cc, val = line_aa(y1,x1,y2,x2)
             frame[rr, cc] = 255
+        # 6~7 Head neck
+        i = 6
+        if np.less(joint_xy[i:i + 2, :], 0).any(): continue  # no detection
+        x1 = int(joint_xy[i, 0] * map_w)
+        y1 = int(joint_xy[i, 1] * map_h)
+        x2 = int(joint_xy[i + 1, 0] * map_w)
+        y2 = int(joint_xy[i + 1, 1] * map_h)
+        rr, cc, val = line_aa(y1, x1, y2, x2)
+        frame[rr, cc] = 255
+
         video.append(frame)
     skvideo.io.vwrite("skeleton.mp4", video, inputdict={'-r': '15/1'}, outputdict={
       '-r': '15/1'})
-            
-            
-        
-# Deprecated
-def load_evaluated_heatmaps(batch_size):
-    for video_name in pa.VIDEO_LIST:
-        video_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".m4v")
-        paf_path = os.path.join(pa.RNN_SAVED_JOINTS_PATH, video_name)
-        srt_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".srt")
 
-        metadata = skvideo.io.ffprobe(video_path)
-        total_frame_num = metadata["video"]["@nb_frames"]
     
 def video_frame_class_gen(batch_size, time_steps):
     """
@@ -194,6 +192,7 @@ def video_frame_class_gen(batch_size, time_steps):
         # [B,T]
         batch_time_labels = [labels[start : start + time_steps] for start in start_idx_list]
         yield (batch_time_frames, batch_time_labels)
+
 
 def test_video_frames(num_img):
     vgen = skvideo.io.vreader(os.path.join(pa.VIDEO_FOLDER_PATH, "test.mp4"))
