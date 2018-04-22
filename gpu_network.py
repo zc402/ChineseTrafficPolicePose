@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow.contrib import layers
-from tensorflow.contrib import rnn
+
 
 class PoseNet:
     def __init__(self):
@@ -211,35 +211,6 @@ class PoseNet:
         img_batch_size = rconv7.get_shape().as_list()[0]
         img_features = tf.reshape(rconv7, [1, img_batch_size, -1]) # time, consecutive images, features
         return build_rnn_network(img_features, batch_time_class)
-        
-        
-        
-def build_rnn_network(batch_time_input, batch_time_class):
-    """
-    build rnn network
-    :param batch_time_input: [batch, time_step, n_input]
-    :param batch_time_class: [batch, time_step, n_classes]
-    :return:loss, prediction_list
-    """
-    n_classes = batch_time_class.get_shape().as_list()[2]
-    num_units = 32
-    assert(batch_time_input.get_shape().as_list()[1] == batch_time_class.get_shape().as_list()[1])
-    input_list = tf.unstack(batch_time_input, axis=1) # list [time_step][batch, n_classes]
-    lstm_layer = rnn.BasicLSTMCell(num_units=num_units)
-    lstm_outputs, _ = rnn.static_rnn(lstm_layer, input_list, dtype=tf.float32) # list [time_step][batch, n_units]
-    
-    # Fully connect outputs to class_num
-    # weights and biases of fully connected layer
-    out_weights=tf.Variable(tf.random_normal([num_units,n_classes]))
-    out_bias=tf.Variable(tf.random_normal([n_classes]))
-    
-    # Each output multiply by same fc layer:  list [time_step][batch, n_outputs]
-    lstm_prediction_list = [tf.matmul(output,out_weights) + out_bias for output in lstm_outputs]
-    # Labels list: [t][b, classes]
-    t_bc_label_list = tf.unstack(batch_time_class, axis=1)
-    time_batch_loss_list = []
-    for i in range(len(lstm_prediction_list)):
-        time_batch_loss = tf.nn.softmax_cross_entropy_with_logits_v2(logits=lstm_prediction_list[i], labels=t_bc_label_list[i])
-        time_batch_loss_list.append(time_batch_loss)
-    loss = tf.reduce_mean(time_batch_loss_list)
-    return loss, lstm_prediction_list
+
+
+

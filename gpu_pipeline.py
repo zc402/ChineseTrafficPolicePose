@@ -53,7 +53,7 @@ def joint_to_bone(ipjc_tensor, pcm_mask):
     :return: ipbpc_tensor, paf_mask
     """
     # Bones: 6-7, 7-2, 2-1, 1-0, 7-3, 3-4, 4-5
-    bones = [[6, 7], [7, 2], [2, 1], [1, 0], [7, 3], [3, 4], [4, 5]]
+    bones = pa.bones
     # I P bp1bp2 C
     bones_list = [tf.stack([ipjc_tensor[:, :, p1, :], ipjc_tensor[:, :, p2, :]], axis=2) for p1, p2 in bones]
     # I P B (p1,p2) c

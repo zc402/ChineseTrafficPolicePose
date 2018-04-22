@@ -13,6 +13,7 @@ RNN_SAVED_JOINTS_PATH = "./dataset/gen/rnn_saved_joints"
 VIDEO_FOLDER_PATH = "dataset/policepose_video"
 VIDEO_LIST = ["20180412"]
 
+bones = [[6, 7], [7, 2], [2, 1], [1, 0], [7, 3], [3, 4], [4, 5]]
 
 def create_necessary_folders():
     def create(directory):
