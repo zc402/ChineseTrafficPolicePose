@@ -52,17 +52,16 @@ def joint_to_bone(ipjc_tensor, pcm_mask):
     :param pcm_mask: [Image] [Person] [Joint]
     :return: ipbpc_tensor, paf_mask
     """
-    # 01 12 23 34 45 *67*
-    # I P B c1, Bone = 0,1,2,3,4,6
-    ipbp1c = tf.concat([ipjc_tensor[:, :, 0:5, :], ipjc_tensor[:, :, 6:7, :]], axis=2)
-    # I P B c2, Bone = 1,2,3,4,5,7
-    ipbp2c = tf.concat([ipjc_tensor[:, :, 1:6, :], ipjc_tensor[:, :, 7:8, :]], axis=2)
+    # Bones: 6-7, 7-2, 2-1, 1-0, 7-3, 3-4, 4-5
+    bones = [[6, 7], [7, 2], [2, 1], [1, 0], [7, 3], [3, 4], [4, 5]]
+    # I P bp1bp2 C
+    bones_list = [tf.stack([ipjc_tensor[:, :, p1, :], ipjc_tensor[:, :, p2, :]], axis=2) for p1, p2 in bones]
     # I P B (p1,p2) c
-    ipbpc_tensor = tf.stack([ipbp1c, ipbp2c], axis=3)
-    # When either one of joints is 0, bone is masked
-    paf_mask_arm = tf.multiply(pcm_mask[:, :, 0:5], pcm_mask[:, :, 1:6], name='paf_mask_arm')
-    paf_mask_head = tf.multiply(pcm_mask[:, :, 6:7], pcm_mask[:, :, 7:8], name='paf_mask_head')
-    paf_mask = tf.concat([paf_mask_arm, paf_mask_head], axis=2)
+    ipbpc_tensor = tf.stack(bones_list, axis=2)
+    # Mask: When either one of joints is 0, bone is masked
+    # Mask: I P B
+    bones_mask_list = [tf.multiply(pcm_mask[:, :, p1], pcm_mask[:, :, p2]) for p1, p2 in bones]
+    paf_mask = tf.stack(bones_mask_list, axis=2)
     return ipbpc_tensor, paf_mask
     
 
@@ -152,7 +151,7 @@ def build_training_pipeline(ipjc_holder, img_holder):
     """
     with tf.variable_scope("prepare"):
         HEAT_SIZE = pa.HEAT_SIZE
-        ipjc_tensor = tf.divide(ipjc_holder[:, :, :, 0:2], pa.HEAT_ZOOMING_RATE)  # TODO: img to heat, divide 8 in ipjc.npy
+        ipjc_tensor = tf.divide(ipjc_holder[:, :, :, 0:2], pa.HEAT_ZOOMING_RATE)
         pcm_mask = ipjc_holder[:, :, :, 2]
     with tf.variable_scope("pcm"):
         pcm = part_confidence_maps(ipjc_tensor, pcm_mask, HEAT_SIZE)

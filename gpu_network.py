@@ -80,7 +80,7 @@ class PoseNet:
              .conv(128, 3, 'conv_5_2_cpm_l1')
              .conv(128, 3, 'conv_5_3_cpm_l1')
              .conv(512, 1, 'conv_5_4_cpm_l1')
-             .conv(6*2, 1, 'conv_5_5_cpm_l1', relu=False))
+             .conv(7*2, 1, 'conv_5_5_cpm_l1', relu=False))
 
         (self.feed('conv_4_4_cpm')
              .conv(128, 3, 'conv_5_1_cpm_l2')
@@ -96,7 +96,7 @@ class PoseNet:
              .conv(128, 7, 'mconv4_stage2_l1')
              .conv(128, 7, 'mconv5_stage2_l1')
              .conv(128, 1, 'mconv6_stage2_l1')
-             .conv(6*2, 1, 'mconv7_stage2_l1', relu=False))
+             .conv(7*2, 1, 'mconv7_stage2_l1', relu=False))
 
         (self.feed('concat_stage2')
              .conv(128, 7, 'mconv1_stage2_l2')
@@ -115,7 +115,7 @@ class PoseNet:
              .conv(128, 7, 'mconv4_stage3_l1')
              .conv(128, 7, 'mconv5_stage3_l1')
              .conv(128, 1, 'mconv6_stage3_l1')
-             .conv(6*2, 1, 'mconv7_stage3_l1', relu=False))
+             .conv(7*2, 1, 'mconv7_stage3_l1', relu=False))
         (self.feed('concat_stage3')
              .conv(128, 7, 'mconv1_stage3_l2')
              .conv(128, 7, 'mconv2_stage3_l2')
@@ -148,7 +148,7 @@ class PoseNet:
             if 'mconv7' in layer_name and '_l2' in layer_name:
                 l2s.append(self.layer_dict[layer_name])
         for i, l1 in enumerate(l1s):
-            loss = tf.nn.l2_loss(l1 - batch_paf) / batch_size  / 12
+            loss = tf.nn.l2_loss(l1 - batch_paf) / batch_size  / 14
             tf.summary.scalar(name='l1_stage'+str(i+1), tensor=loss)
             l1s_loss.append(loss)
         for i, l2 in enumerate(l2s):
