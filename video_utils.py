@@ -1,10 +1,10 @@
 import skvideo.io
-from skimage.viewer import ImageViewer
+# from skimage.viewer import ImageViewer
 import pysrt
 import tensorflow as tf
 import sys
 import parameters as pa
-import gpu_pipeline
+#import gpu_pipeline
 import gpu_network
 import numpy as np
 import os
@@ -23,7 +23,7 @@ def _class_per_frame(srt, total_frames, frame_rate):
     subs = pysrt.open(srt)
     # Time of each frame (Millisecond)
     time_of_frame_list = [time / frame_rate * 1000 for time in range(total_frames)]
-    
+
     def class_of_one_frame(frame_num):
         """
         :param frame_num:
@@ -34,32 +34,10 @@ def _class_per_frame(srt, total_frames, frame_rate):
                 return sub.text_without_tags
         # No subtitle annotated
         return "0"
-    
+
     class_list = [class_of_one_frame(num) for num in range(total_frames)]
     return class_list
 
-
-def resize_keep_ratio(img, ori_size, new_size):
-    assert len(ori_size) == 2
-    assert len(new_size) == 2
-    PW, PH = new_size
-    target_ratio = PW / PH
-    ori_ratio = ori_size[0] / ori_size[1]
-    bg = None
-    if ori_ratio >= target_ratio:
-        # Depends on width
-        zoom_ratio = PW / ori_size[0]
-        bg = np.zeros((int(ori_size[0] / target_ratio), ori_size[0], 3), np.uint8)
-
-    elif ori_ratio < target_ratio:
-        # Depends on height
-        zoom_ratio = PH / ori_size[1]
-        bg = np.zeros((ori_size[1], int(ori_size[1] * target_ratio), 3), np.uint8)
-        
-    bg[:ori_size[1], :ori_size[0], :] = bg[:ori_size[1], :ori_size[0], :] + img[:, :, :]
-    re_im = Image.fromarray(bg, 'RGB')
-    re_im = re_im.resize((PW, PH), Image.ANTIALIAS)
-    return np.asarray(re_im)
 
 def save_joints_position():
     """
@@ -81,9 +59,9 @@ def save_joints_position():
     img_holder = tf.placeholder(tf.float32, [batch_size, v_height, v_width, 3])
     # Entire network
     paf_pcm_tensor = gpu_network.PoseNet().inference_paf_pcm(img_holder)
-    
+
     # Place for argmax values
-    joint_ixy = list() # [i][j1~6][x,y]
+    joint_ixy = list() # [i][j0~6][x,y]
     # Session Saver summary_writer
     with tf.Session() as sess:
         saver = tf.train.Saver()
@@ -92,7 +70,7 @@ def save_joints_position():
             saver.restore(sess, ckpt.model_checkpoint_path)
         else:
             raise FileNotFoundError("Tensorflow ckpt not found")
-        
+
         # Close the graph so no op can be added
         tf.get_default_graph().finalize()
 
@@ -100,7 +78,7 @@ def save_joints_position():
             frames = [next(v_gen)/255. for _ in range(batch_size)]
             feed_dict = {img_holder: frames}
             paf_pcm = sess.run(paf_pcm_tensor, feed_dict=feed_dict)
-            pcm = paf_pcm[:,:,:,12:]
+            pcm = paf_pcm[:,:,:,14:]
             pcm = np.clip(pcm, 0., 1.)
             for idx_img in range(batch_size):
                 # 6 joint in image
@@ -141,35 +119,44 @@ def skeleton_video():
     for joint_xy in joint_data:
         # Inside one image
         frame = np.zeros([map_h, map_w], dtype=np.uint8)
-        for i in range(5): # 01234
-            if np.less(joint_xy[i:i+2, :], 0).any(): continue # no detection
-            x1 = int(joint_xy[i, 0] * map_w)
-            y1 = int(joint_xy[i, 1] * map_h)
-            x2 = int(joint_xy[i+1, 0] * map_w)
-            y2 = int(joint_xy[i+1, 1] * map_h)
+        for b1, b2 in pa.bones:
+            if np.less(joint_xy[b1,:], 0).any() or np.less(joint_xy[b2,:], 0).any():
+                continue # no detection
+            x1 = int(joint_xy[b1, 0] * map_w)
+            y1 = int(joint_xy[b1, 1] * map_h)
+            x2 = int(joint_xy[b2, 0] * map_w)
+            y2 = int(joint_xy[b2, 1] * map_h)
             rr, cc, val = line_aa(y1,x1,y2,x2)
             frame[rr, cc] = 255
-        # 6~7 Head neck
-        i = 6
-        if np.less(joint_xy[i:i + 2, :], 0).any(): continue  # no detection
-        x1 = int(joint_xy[i, 0] * map_w)
-        y1 = int(joint_xy[i, 1] * map_h)
-        x2 = int(joint_xy[i + 1, 0] * map_w)
-        y2 = int(joint_xy[i + 1, 1] * map_h)
-        rr, cc, val = line_aa(y1, x1, y2, x2)
-        frame[rr, cc] = 255
 
         video.append(frame)
     skvideo.io.vwrite("skeleton.mp4", video, inputdict={'-r': '15/1'}, outputdict={
       '-r': '15/1'})
 
-    
+def random_btj_btl_gen(batch_size, time_steps):
+    "Load joint pos with labels at random time"
+    video_name = pa.VIDEO_LIST[0]
+    joints_path = os.path.join(pa.RNN_SAVED_JOINTS_PATH, video_name + ".npy")
+    # Joints: I J XY
+    joints = np.load(joints_path)
+    fe_length = len(joints)
+    # Srt: I C
+    srt_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".srt")
+    i_c_labels = _class_per_frame(srt_path, fe_length, 15)
+    while True:
+        start_idx_list = np.random.randint(0, fe_length - time_steps, size=batch_size)
+        # Batch_time_joints: B T J
+        batch_time_joints = [joints[start : start + time_steps] for start in start_idx_list]
+        # Batch_time_labels: B T
+        b_t_l = [i_c_labels[start : start + time_steps] for start in start_idx_list]
+        yield (batch_time_joints, b_t_l)
+
 def video_frame_class_gen(batch_size, time_steps):
     """
     Generate frames with corresponding labels
     :param batch_size: RNN batch size
     :param time_steps: Consecutive frames for 1 batch
-    :return:
+    :return: batch_time_frames, batch_time_labels
     """
     video_name = pa.VIDEO_LIST[0]
     video_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".mp4")
@@ -182,7 +169,7 @@ def video_frame_class_gen(batch_size, time_steps):
         frame = frame / 255.
         frames_resize.append(frame)
     frames = None
-    
+
     num_frames = len(frames_resize)
     labels = _class_per_frame(srt_path, num_frames, 15)# Frame rate 15!
     while True:
