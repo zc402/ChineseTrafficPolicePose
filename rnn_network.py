@@ -70,12 +70,20 @@ def extract_features_from_joints(joint_tensor):
     def joint_vector(bone):  # return 2 dim [I][XY]
         assert len(bone) == 2
         return joint_tensor[:, bone[1], :] - joint_tensor[:, bone[0], :]
+    def xandy_visible(j):
+        return tf.logical_and(tf.greater(joint_tensor[:, j, 0], 0.), tf.greater(joint_tensor[:, j, 1], 0.))
+    bone_mask = [tf.logical_and(xandy_visible(j1), xandy_visible(j2)) for j1, j2 in pa.bones]  #list[b] [I]
+    bone_mask = tf.stack(bone_mask, axis=1) # I B
+    bone_mask = tf.expand_dims(bone_mask, axis=-1) # I B 1
+    bone_vector = [joint_vector(b) for b in pa.bones] # list[b] [I][XY]
+    bone_vector = tf.stack(bone_vector, axis=1) # I B XY
+    bone_vector = bone_vector * tf.cast(bone_mask, tf.float32)  # I B XY
 
-    head_v = joint_vector(pa.bones[0])
-    head_v = tf.expand_dims(head_v, axis=1)
+
+    head_v = bone_vector[:, 0, :] # I XY
+    head_v = tf.expand_dims(head_v, axis=1) # I 1 XY
     head_scalar = tf.norm(head_v, axis=2) + 1e-7
-    body_v_list = [joint_vector(b) for b in pa.bones[1:]]
-    body_v = tf.stack(body_v_list, axis=1)  # I J XY
+    body_v = bone_vector[:, 1:, :]  # I J XY
     body_scalar = tf.norm(body_v, axis=2) + 1e-7  # I J
     # [I][J]
     arm_wrt_head = body_scalar / head_scalar

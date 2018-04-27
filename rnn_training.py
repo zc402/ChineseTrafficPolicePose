@@ -43,7 +43,7 @@ def build_training_ops(loss_tensor):
 
 
 def print_log(loss_num, g_step_num, lr_num, itr):
-    INTERVAL = 100
+    INTERVAL = 10
     log_dict = {}
     log_dict['Loss'] = loss_num
     log_dict['Step'] = g_step_num
@@ -66,14 +66,13 @@ def test_mode(sess, btjh, btc_pred_max, state, time_step):
         8: "GET OFF"}
     v_name = "test"
     # video_utils.save_joints_position(v_name)
-    # TODO: Read joint pos file
     joint_data = np.load(os.path.join(pa.RNN_SAVED_JOINTS_PATH, v_name + ".npy"))
     pred_list = []
     for time in range(0, len(joint_data)-time_step, time_step):
         j_step = joint_data[time: time + time_step]
         j_step = j_step[np.newaxis,:,:,:]  # Batch size = 1
         feed_dict = {btjh: j_step}
-        btc_pred_num = sess.run([btc_pred_max, state], feed_dict = feed_dict)
+        btc_pred_num = sess.run(btc_pred_max, feed_dict = feed_dict)
         pred = np.reshape(btc_pred_num, [-1])
         [pred_list.append(p) for p in pred]
 
@@ -99,9 +98,10 @@ def test_mode(sess, btjh, btc_pred_max, state, time_step):
 def main(argv=None):
     if 'test' in FLAGS.mode:
         BATCH_SIZE = 1
+        TIME_STEP = 15 * 70
     else:
-        BATCH_SIZE = 30
-    TIME_STEP = 15
+        BATCH_SIZE = 3
+        TIME_STEP = 15 * 60
     NUM_CLASSES = 9  # 8 classes + 1 for no move
     NUM_JOINTS = 8
 
@@ -154,7 +154,7 @@ def main(argv=None):
         print_log(loss_num, g_step_num, lr_num, itr)
 
         # Summary
-        if itr % 5000 == 0:
+        if itr % 300 == 0:
             btc_pred_num, l_max_num, acc = sess.run(
                 [btc_pred_max, l_max, accuracy],
                 feed_dict=feed_dict)
