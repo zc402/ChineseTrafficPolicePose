@@ -16,6 +16,7 @@ def build_rnn_network(batch_time_input, n_classes, previous_states=None):
     # list [time_step][batch, n_classes]
     input_list = tf.unstack(batch_time_input, axis=1)
     lstm_layer = rnn.BasicLSTMCell(num_units=num_units)
+    print(lstm_layer.state_size)
     # outputs: list [time_step][batch, n_units]
     lstm_outputs, last_states = rnn.static_rnn(
         lstm_layer, input_list, initial_state=previous_states, dtype=tf.float32)

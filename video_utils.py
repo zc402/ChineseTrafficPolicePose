@@ -14,6 +14,7 @@ from skimage.draw import line_aa
 
 assert sys.version_info >= (3, 5)
 
+
 def _class_per_frame(srt, total_frames, frame_rate):
     """
     Convert srt subtitle to class per frame
@@ -22,7 +23,8 @@ def _class_per_frame(srt, total_frames, frame_rate):
     """
     subs = pysrt.open(srt)
     # Time of each frame (Millisecond)
-    time_of_frame_list = [time / frame_rate * 1000 for time in range(total_frames)]
+    time_of_frame_list = [time / frame_rate * 1000
+                          for time in range(total_frames)]
 
     def class_of_one_frame(frame_num):
         """
@@ -34,19 +36,27 @@ def _class_per_frame(srt, total_frames, frame_rate):
                 return sub.text_without_tags
         # No subtitle annotated
         return "0"
-
     class_list = [class_of_one_frame(num) for num in range(total_frames)]
     return class_list
 
 
-def save_joints_position():
+def save_joints_position(v_name=None):
     """
     Save joints position from a video to file
+    v_name: name of video, no appendix
     :return:
     """
     pa.create_necessary_folders()
     batch_size = 15
-    video_path = os.path.join(pa.VIDEO_FOLDER_PATH, pa.VIDEO_LIST[0] + ".mp4")
+    if v_name is None:
+        video_path = os.path.join(
+            pa.VIDEO_FOLDER_PATH,
+            pa.VIDEO_LIST[0] + ".mp4")
+    else:
+        video_path = os.path.join(
+            pa.VIDEO_FOLDER_PATH,
+            v_name + ".mp4")
+
     metadata = skvideo.io.ffprobe(video_path)
     total_frames = int(metadata["video"]["@nb_frames"])
 
@@ -61,7 +71,7 @@ def save_joints_position():
     paf_pcm_tensor = gpu_network.PoseNet().inference_paf_pcm(img_holder)
 
     # Place for argmax values
-    joint_ixy = list() # [i][j0~6][x,y]
+    joint_ixy = list()  # [i][j0~6][x,y]
     # Session Saver summary_writer
     with tf.Session() as sess:
         saver = tf.train.Saver()
@@ -78,17 +88,18 @@ def save_joints_position():
             frames = [next(v_gen)/255. for _ in range(batch_size)]
             feed_dict = {img_holder: frames}
             paf_pcm = sess.run(paf_pcm_tensor, feed_dict=feed_dict)
-            pcm = paf_pcm[:,:,:,14:]
+            pcm = paf_pcm[:, :, :, 14:]
             pcm = np.clip(pcm, 0., 1.)
             for idx_img in range(batch_size):
                 # 6 joint in image
                 img_j6 = []
                 for idx_joint in range(8):
-                    heat = pcm[idx_img,:,:,idx_joint]
+                    heat = pcm[idx_img, :, :, idx_joint]
                     c_coor_1d = np.argmax(heat)
-                    c_coor_2d = np.unravel_index(c_coor_1d, [pa.HEAT_SIZE[1], pa.HEAT_SIZE[0]])
+                    c_coor_2d = np.unravel_index(
+                        c_coor_1d, [pa.HEAT_SIZE[1], pa.HEAT_SIZE[0]])
                     c_value = heat[c_coor_2d]
-                    j_xy = [] # x,y
+                    j_xy = []  # x,y
                     if c_value > 0.3:
                         percent_h = c_coor_2d[0] / pa.HEAT_H
                         percent_w = c_coor_2d[1] / pa.HEAT_W
@@ -101,7 +112,9 @@ def save_joints_position():
                 joint_ixy.append(img_j6)
             print("Image: "+str(i))
     # sess closed
-    save_path = os.path.join(pa.RNN_SAVED_JOINTS_PATH, pa.VIDEO_LIST[0] + ".npy")
+    save_path = os.path.join(
+        pa.RNN_SAVED_JOINTS_PATH,
+        v_name + ".npy")
     np.save(save_path, joint_ixy)
     print(save_path)
 
@@ -113,25 +126,37 @@ def skeleton_video():
     """
     map_h = 512
     map_w = 512
-    joint_data_path = os.path.join(pa.RNN_SAVED_JOINTS_PATH, pa.VIDEO_LIST[0] + ".npy")
+    joint_data_path = os.path.join(
+        pa.RNN_SAVED_JOINTS_PATH,
+        pa.VIDEO_LIST[0] + ".npy")
     joint_data = np.load(joint_data_path)
     video = []
     for joint_xy in joint_data:
         # Inside one image
         frame = np.zeros([map_h, map_w], dtype=np.uint8)
         for b1, b2 in pa.bones:
-            if np.less(joint_xy[b1,:], 0).any() or np.less(joint_xy[b2,:], 0).any():
-                continue # no detection
+            if np.less(
+                    joint_xy[b1, :],
+                    0).any() or np.less(
+                    joint_xy[b2, :],
+                    0).any():
+                continue  # no detection
             x1 = int(joint_xy[b1, 0] * map_w)
             y1 = int(joint_xy[b1, 1] * map_h)
             x2 = int(joint_xy[b2, 0] * map_w)
             y2 = int(joint_xy[b2, 1] * map_h)
-            rr, cc, val = line_aa(y1,x1,y2,x2)
+            rr, cc, val = line_aa(y1, x1, y2, x2)
             frame[rr, cc] = 255
 
         video.append(frame)
-    skvideo.io.vwrite("skeleton.mp4", video, inputdict={'-r': '15/1'}, outputdict={
-      '-r': '15/1'})
+    skvideo.io.vwrite(
+        "skeleton.mp4",
+        video,
+        inputdict={
+            '-r': '15/1'},
+        outputdict={
+             '-r': '15/1'})
+
 
 def random_btj_btl_gen(batch_size, time_steps):
     "Load joint pos with labels at random time"
@@ -144,12 +169,16 @@ def random_btj_btl_gen(batch_size, time_steps):
     srt_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".srt")
     i_c_labels = _class_per_frame(srt_path, fe_length, 15)
     while True:
-        start_idx_list = np.random.randint(0, fe_length - time_steps, size=batch_size)
+        start_idx_list = np.random.randint(
+            0, fe_length - time_steps, size=batch_size)
         # Batch_time_joints: B T J
-        batch_time_joints = [joints[start : start + time_steps] for start in start_idx_list]
+        batch_time_joints = [joints[start: start + time_steps]
+                             for start in start_idx_list]
         # Batch_time_labels: B T
-        b_t_l = [i_c_labels[start : start + time_steps] for start in start_idx_list]
+        b_t_l = [i_c_labels[start: start + time_steps]
+                 for start in start_idx_list]
         yield (batch_time_joints, b_t_l)
+
 
 def video_frame_class_gen(batch_size, time_steps):
     """
@@ -161,7 +190,8 @@ def video_frame_class_gen(batch_size, time_steps):
     video_name = pa.VIDEO_LIST[0]
     video_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".mp4")
     srt_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".srt")
-    frames = skvideo.io.vread(video_path)[900:990] #TODO: This is just for test!
+    frames = skvideo.io.vread(video_path)[
+        900:990]  # TODO: This is just for test!
     frames_resize = []
     for num, frame in enumerate(frames):
         frame = np.asarray(frame, dtype=np.float32)
@@ -171,15 +201,14 @@ def video_frame_class_gen(batch_size, time_steps):
     frames = None
 
     num_frames = len(frames_resize)
-    labels = _class_per_frame(srt_path, num_frames, 15)# Frame rate 15!
+    labels = _class_per_frame(srt_path, num_frames, 15)  # Frame rate 15!
     while True:
-        start_idx_list = np.random.randint(0, num_frames - time_steps, size=batch_size)
+        start_idx_list = np.random.randint(
+            0, num_frames - time_steps, size=batch_size)
         # [B,T,H,W,C]
-        batch_time_frames = [frames_resize[start : start + time_steps] for start in start_idx_list]
+        batch_time_frames = [frames_resize[start: start + time_steps]
+                             for start in start_idx_list]
         # [B,T]
-        batch_time_labels = [labels[start : start + time_steps] for start in start_idx_list]
+        batch_time_labels = [labels[start: start + time_steps]
+                             for start in start_idx_list]
         yield (batch_time_frames, batch_time_labels)
-
-
-
-
