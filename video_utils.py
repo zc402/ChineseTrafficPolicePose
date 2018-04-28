@@ -160,24 +160,34 @@ def skeleton_video():
 
 def random_btj_btl_gen(batch_size, time_steps):
     "Load joint pos with labels at random time"
-    video_name = pa.VIDEO_LIST[0]
-    joints_path = os.path.join(pa.RNN_SAVED_JOINTS_PATH, video_name + ".npy")
-    # Joints: I J XY
-    joints = np.load(joints_path)
-    fe_length = len(joints)
-    # Srt: I C
-    srt_path = os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".srt")
-    i_c_labels = _class_per_frame(srt_path, fe_length, 15)
+    video_names = pa.VIDEO_LIST
+    joints_paths = [os.path.join(pa.RNN_SAVED_JOINTS_PATH, video_name + ".npy") for video_name in video_names]
+    # Joints: [F] I J XY. Joints in each film
+    joints_data_list = [np.load(p) for p in joints_paths]
+    fe_length_list = [len(j) for j in joints_data_list]
+    # srt subtitle file path
+    srt_path_list = [os.path.join(pa.VIDEO_FOLDER_PATH, video_name + ".srt") for video_name in video_names]
+    # labels for each film
+    i_c_labels_list  = [_class_per_frame(srt_path, fe_length, 15) for srt_path, fe_length in list(zip(srt_path_list, fe_length_list))]
+
     while True:
-        start_idx_list = np.random.randint(
-            0, fe_length - time_steps, size=batch_size)
         # Batch_time_joints: B T J
-        batch_time_joints = [joints[start: start + time_steps]
-                             for start in start_idx_list]
+        batch_time_joints_list = []
         # Batch_time_labels: B T
-        b_t_l = [i_c_labels[start: start + time_steps]
-                 for start in start_idx_list]
-        yield (batch_time_joints, b_t_l)
+        batch_labels_list = []
+        for batch in range(0, batch_size):
+            # Output 1 batch
+            film_ind = np.random.randint(0, len(i_c_labels_list))
+            labels = i_c_labels_list[film_ind]
+            fe_length = fe_length_list[film_ind]
+            # Start index of time
+            start = np.random.randint(0, fe_length - time_steps)
+            joints = joints_data_list[film_ind]
+            time_joints = joints[start: start + time_steps]
+            time_labels = labels[start: start + time_steps]
+            batch_time_joints_list.append(time_joints)
+            batch_labels_list.append(time_labels)
+        yield (batch_time_joints_list, batch_labels_list)
 
 
 def video_frame_class_gen(batch_size, time_steps):

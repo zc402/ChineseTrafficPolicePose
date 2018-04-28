@@ -97,5 +97,5 @@ def extract_features_from_joints(joint_tensor):
     # [I][Joint][Features]
     joint_features = tf.stack([arm_wrt_head, sine, cosine], axis=2)  # I J F
     features = tf.reshape(joint_features, [joint_features.get_shape().as_list()[0], -1])  # I F
+    # features = tf.Print(features, [features], summarize=100)
     return features
-

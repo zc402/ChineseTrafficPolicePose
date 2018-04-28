@@ -98,7 +98,7 @@ def test_mode(sess, btjh, btc_pred_max, state, time_step):
 def main(argv=None):
     if 'test' in FLAGS.mode:
         BATCH_SIZE = 1
-        TIME_STEP = 15 * 70
+        TIME_STEP = 15 * 74
     else:
         BATCH_SIZE = 3
         TIME_STEP = 15 * 60
