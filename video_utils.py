@@ -100,7 +100,7 @@ def save_joints_position(v_name=None):
                         c_coor_1d, [pa.HEAT_SIZE[1], pa.HEAT_SIZE[0]])
                     c_value = heat[c_coor_2d]
                     j_xy = []  # x,y
-                    if c_value > 0.3:
+                    if c_value > 0.15:
                         percent_h = c_coor_2d[0] / pa.HEAT_H
                         percent_w = c_coor_2d[1] / pa.HEAT_W
                         j_xy.append(percent_w)
@@ -119,7 +119,7 @@ def save_joints_position(v_name=None):
     print(save_path)
 
 
-def skeleton_video():
+def skeleton_video(name):
     """
     Generate skeleton video from joints position file
     :return:
@@ -128,7 +128,7 @@ def skeleton_video():
     map_w = 512
     joint_data_path = os.path.join(
         pa.RNN_SAVED_JOINTS_PATH,
-        pa.VIDEO_LIST[0] + ".npy")
+        name + ".npy")
     joint_data = np.load(joint_data_path)
     video = []
     for joint_xy in joint_data:
