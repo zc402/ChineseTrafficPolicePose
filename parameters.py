@@ -11,7 +11,13 @@ MAX_ALLOWED_PEOPLE = 8
 RESIZED_IMG_FOLDER = "dataset/gen/ai_challenger_ratio_kept"
 RNN_SAVED_JOINTS_PATH = "./dataset/gen/rnn_saved_joints"
 VIDEO_FOLDER_PATH = "dataset/policepose_video"
-VIDEO_LIST = ["train10sec1", "train10sec2"]
+VIDEO_LIST = [
+    "train10sec1",
+    "train10sec2",
+    "train10sec3",
+    "train10sec4",
+    "train10sec5",
+    "train5sec1"]
 
 bones = [[6, 7], [7, 2], [2, 1], [1, 0], [7, 3], [3, 4], [4, 5]]
 

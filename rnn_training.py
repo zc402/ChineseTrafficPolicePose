@@ -100,7 +100,7 @@ def main(argv=None):
         BATCH_SIZE = 1
         TIME_STEP = 15 * 74
     else:
-        BATCH_SIZE = 3
+        BATCH_SIZE = 50
         TIME_STEP = 15 * 60
     NUM_CLASSES = 9  # 8 classes + 1 for no move
     NUM_JOINTS = 8
@@ -144,6 +144,7 @@ def main(argv=None):
         sess.close()
         exit(0)
 
+    print("Training with batch size:"+str(BATCH_SIZE))
     # Load joint pos
     jgen = video_utils.random_btj_btl_gen(BATCH_SIZE, TIME_STEP)
     for itr in range(1, int(1e7)):
