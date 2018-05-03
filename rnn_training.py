@@ -98,9 +98,9 @@ def test_mode(sess, btjh, btc_pred_max, state, time_step):
 def main(argv=None):
     if 'test' in FLAGS.mode:
         BATCH_SIZE = 1
-        TIME_STEP = 15 * 74
+        TIME_STEP = 15 * 49
     else:
-        BATCH_SIZE = 50
+        BATCH_SIZE = 128
         TIME_STEP = 15 * 60
     NUM_CLASSES = 9  # 8 classes + 1 for no move
     NUM_JOINTS = 8

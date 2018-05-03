@@ -17,7 +17,11 @@ VIDEO_LIST = [
     "train10sec3",
     "train10sec4",
     "train10sec5",
-    "train5sec1"]
+    "train5sec1",
+    "train5sec2",
+    "train5sec3",
+    "train5sec4",
+    "train5sec5"]
 
 bones = [[6, 7], [7, 2], [2, 1], [1, 0], [7, 3], [3, 4], [4, 5]]
 

@@ -46,6 +46,7 @@ def save_joints_position(v_name=None):
     v_name: name of video, no appendix
     :return:
     """
+    tf.reset_default_graph()
     pa.create_necessary_folders()
     batch_size = 15
     if v_name is None:
@@ -80,9 +81,6 @@ def save_joints_position(v_name=None):
             saver.restore(sess, ckpt.model_checkpoint_path)
         else:
             raise FileNotFoundError("Tensorflow ckpt not found")
-
-        # Close the graph so no op can be added
-        tf.get_default_graph().finalize()
 
         for i in range(0, total_frames - batch_size + 1, batch_size):
             frames = [next(v_gen)/255. for _ in range(batch_size)]
