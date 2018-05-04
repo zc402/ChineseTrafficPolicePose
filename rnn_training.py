@@ -14,6 +14,7 @@ import pysrt
 LEARNING_RATE = 0.0004
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string('mode', "train", "Train or test mode")
+tf.flags.DEFINE_integer('duration', 60, "Test video duration")
 
 
 def build_training_ops(loss_tensor):
@@ -98,7 +99,7 @@ def test_mode(sess, btjh, btc_pred_max, state, time_step):
 def main(argv=None):
     if 'test' in FLAGS.mode:
         BATCH_SIZE = 1
-        TIME_STEP = 15 * 49
+        TIME_STEP = 15 * FLAGS.duration
     else:
         BATCH_SIZE = 128
         TIME_STEP = 15 * 60

@@ -17,6 +17,7 @@ VIDEO_LIST = [
     "train10sec3",
     "train10sec4",
     "train10sec5",
+    "train10sec6",
     "train5sec1",
     "train5sec2",
     "train5sec3",
