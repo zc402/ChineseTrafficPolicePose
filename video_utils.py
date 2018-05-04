@@ -15,10 +15,11 @@ from skimage.draw import line_aa
 assert sys.version_info >= (3, 5)
 
 
-def _class_per_frame(srt, total_frames, frame_rate):
+def _class_per_frame(srt, total_frames, frame_rate, delay=7):
     """
     Convert srt subtitle to class per frame
     :param srt: subtitle path
+    :param delay: delay the appearence of prediction
     :return: class per frame array
     """
     subs = pysrt.open(srt)
@@ -37,6 +38,8 @@ def _class_per_frame(srt, total_frames, frame_rate):
         # No subtitle annotated
         return "0"
     class_list = [class_of_one_frame(num) for num in range(total_frames)]
+    delay_list = ["0" for i in range(delay)]
+    class_list = delay_list + class_list
     return class_list
 
 
