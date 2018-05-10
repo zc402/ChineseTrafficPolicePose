@@ -223,3 +223,6 @@ def video_frame_class_gen(batch_size, time_steps):
         batch_time_labels = [labels[start: start + time_steps]
                              for start in start_idx_list]
         yield (batch_time_frames, batch_time_labels)
+
+def save_all_training_samples_to_joint_data():
+    [save_joints_position(vname) for vname in pa.VIDEO_LIST]

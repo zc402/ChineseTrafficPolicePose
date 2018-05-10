@@ -183,34 +183,6 @@ class PoseNet:
         self._add_paf_summary()
         return total_loss
         
-    def rnn_conv_input(self): # TODO: don't forget to put trainable before this layer to false
-        """
-        Conv layers as the input of rnn network
-        :return: [B, 1, 1, 40] tensor with 40 features for each image
-        """
-        raise RuntimeError('Deprecated! will be removed')
-        paf_pcm = self.layer_dict['paf_pcm_output']
-        pcm = paf_pcm[:, :, :, 10:16]
-        self.layer_dict['pcm_output'] = pcm # Only use part confidence map
-        assert(paf_pcm is not None, 'Build CPM network before calling rnn conv!')
-        assert(paf_pcm.get_shape().as_list()[1:4] == [64, 64, 16])
-        (self.feed('pcm_output')
-         .max_pool('pool_1_rnn') # 32
-         .conv(16, 3, 'rconv2')
-         .max_pool('pool_2_rnn') # 16
-         .conv(16, 3, 'rconv3')
-         .max_pool('pool_3_rnn') # 8
-         .conv(16, 3, 'rconv5')
-         .max_pool('pool_4_rnn') # 4
-         .conv(16, 4, 'rconv7', padding='VALID')) # [B, 1, 1, 40]
-        assert(self.layer_dict['rconv7'].get_shape().as_list()[1:3] == [1, 1])
-        return self.layer_dict['rconv7']
-    
-    def rnn_with_batch_one(self, batch_time_class):
-        rconv7 = self.layer_dict['rconv7']
-        img_batch_size = rconv7.get_shape().as_list()[0]
-        img_features = tf.reshape(rconv7, [1, img_batch_size, -1]) # time, consecutive images, features
-        return build_rnn_network(img_features, batch_time_class)
 
 
 
