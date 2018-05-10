@@ -5,6 +5,7 @@ import gpu_network
 import rnn_network
 import cv2
 import numpy as np
+from PIL import Image
 
 def main(argv=None):
     g_1 = tf.Graph()
@@ -98,16 +99,6 @@ def main(argv=None):
             # Joint points
             img_j6.append(j_xy)  # [j][XY]
 
-        police_dict = {
-                0: "--",
-                1: "STOP",
-                2: "PASS",
-                3: "TURN LEFT",
-                4: "LEFT WAIT",
-                5: "TURN RIGHT",
-                6: "CNG LANE",
-                7: "SLOW DOWN",
-                8: "GET OFF"}
         # video_utils.save_joints_position(v_name)
         joint_data = np.asarray(img_j6)
         joint_data = joint_data[np.newaxis, np.newaxis, :, :]
@@ -119,15 +110,16 @@ def main(argv=None):
         rnn_saved_state = ([state_num[0][0], state_num[1][0]])
         pred = np.reshape(btc_pred_num, [-1])
 
-        pred_text = police_dict[pred[0]]
+        pred_text = pa.police_dict[pred[0]]
         pred_out = np.zeros([200, 800], np.uint8)
+        
         cv2.putText(pred_out, pred_text, (0, 180), cv2.FONT_HERSHEY_SIMPLEX, 4, (255,255,255), 2)
         cv2.imshow('PolicePose', z)
         cv2.imshow('Prediction', pred_out)
         cv2.waitKey(5)
-         
+        
         print(str(iter) + ' ' + pred_text)
-        iter=iter+1
+        iter = iter + 1
 
     cap.release()
     cv2.destroyAllWindows()

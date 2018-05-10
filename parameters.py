@@ -26,6 +26,27 @@ VIDEO_LIST = [
 
 bones = [[6, 7], [7, 2], [2, 1], [1, 0], [7, 3], [3, 4], [4, 5]]
 
+police_dict = {
+                0: "--",
+                1: "STOP",
+                2: "PASS",
+                3: "TURN LEFT",
+                4: "LEFT WAIT",
+                5: "TURN RIGHT",
+                6: "CNG LANE",
+                7: "SLOW DOWN",
+                8: "GET OFF"}
+
+police_dict_chinese = {
+                0: "--",
+                1: "停止",
+                2: "通行",
+                3: "左转",
+                4: "左待转",
+                5: "右转",
+                6: "变道",
+                7: "减速",
+                8: "靠边停车"}
 
 def create_necessary_folders():
     def create(directory):
