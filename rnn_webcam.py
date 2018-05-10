@@ -148,6 +148,7 @@ def main(argv=None):
 
     sess1.close()
     sess2.close()
+    exit(0)
 
 if __name__ == "__main__":
     tf.app.run()
