@@ -62,14 +62,20 @@ def main(argv=None):
 
     
     rnn_saved_state = None
-    z = np.zeros([512, 512, 3], dtype=np.uint8)
+    # Camera output
+    cam_out = np.zeros([512, 512, 3], dtype=np.uint8)
+    # Prediction output
+    map_h = 512
+    map_w = 512
+    sk_out = np.zeros([map_h, map_w], np.uint8)
     iter = 0
     while cap.isOpened():
         ret, frame = cap.read()
         
-        z[0:480, 0:512, :] = frame[0:480, 0:512, :]
+        cam_out[0:480, 0:512, :] = frame[0:480, 0:512, :]
+        sk_out.fill(0)
         
-        rgb = cv2.cvtColor(z, cv2.COLOR_BGR2RGB)
+        rgb = cv2.cvtColor(cam_out, cv2.COLOR_BGR2RGB)
         rgb = rgb.astype(np.float32)
         rgb_norm = rgb / 255.
         rgb_norm = rgb_norm[np.newaxis]
@@ -100,8 +106,23 @@ def main(argv=None):
             img_j6.append(j_xy)  # [j][XY]
 
         # video_utils.save_joints_position(v_name)
-        joint_data = np.asarray(img_j6)
-        joint_data = joint_data[np.newaxis, np.newaxis, :, :]
+        joint_xy = np.asarray(img_j6)
+        joint_data = joint_xy[np.newaxis, np.newaxis, :, :]
+        
+        # Skeleton video
+        # Inside one image
+        for b1, b2 in pa.bones:
+            if np.less(
+                joint_xy[b1, :],
+                0).any() or np.less(
+                joint_xy[b2, :],
+                0).any():
+                continue  # no detection
+            x1 = int(joint_xy[b1, 0] * map_w)
+            y1 = int(joint_xy[b1, 1] * map_h)
+            x2 = int(joint_xy[b2, 0] * map_w)
+            y2 = int(joint_xy[b2, 1] * map_h)
+            cv2.line(sk_out, (x1, y1), (x2, y2), (255, 255, 255))
         
         if rnn_saved_state is None:
             rnn_saved_state = ([np.zeros(32), np.zeros(32)])
@@ -111,13 +132,14 @@ def main(argv=None):
         pred = np.reshape(btc_pred_num, [-1])
 
         pred_text = pa.police_dict[pred[0]]
-        pred_out = np.zeros([200, 800], np.uint8)
         
-        cv2.putText(pred_out, pred_text, (0, 180), cv2.FONT_HERSHEY_SIMPLEX, 4, (255,255,255), 2)
-        cv2.imshow('PolicePose', z)
-        cv2.imshow('Prediction', pred_out)
-        cv2.waitKey(5)
         
+        cv2.putText(sk_out, pred_text, (50, 450), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2)
+        cv2.imshow('Camera', cam_out)
+        cv2.imshow('Skeleton', sk_out)
+        key = cv2.waitKey(5)
+        if key == 27:  # Esc key to stop
+            break
         print(str(iter) + ' ' + pred_text)
         iter = iter + 1
 
