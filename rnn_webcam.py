@@ -58,17 +58,15 @@ def main(argv=None):
         raise FileNotFoundError("RNN ckpt not found.")
 
     cap = cv2.VideoCapture(0)
-    # cap.set(3 ,512)
-    # cap.set(4, 512)
 
+    
     rnn_saved_state = None
+    z = np.zeros([512, 512, 3], dtype=np.uint8)
+    iter = 0
     while cap.isOpened():
         ret, frame = cap.read()
-        z = np.zeros([512, 512, 3], dtype=np.uint8)
-        z[0:480, 0:512, :] = frame[0:480, 0:512, :]
         
-        cv2.imshow('PolicePose', z)
-        cv2.waitKey(5)
+        z[0:480, 0:512, :] = frame[0:480, 0:512, :]
         
         rgb = cv2.cvtColor(z, cv2.COLOR_BGR2RGB)
         rgb = rgb.astype(np.float32)
@@ -120,7 +118,16 @@ def main(argv=None):
         btc_pred_num, state_num = sess2.run([btc_pred_max, state], feed_dict=feed_dict)
         rnn_saved_state = ([state_num[0][0], state_num[1][0]])
         pred = np.reshape(btc_pred_num, [-1])
-        print(police_dict[pred[0]])
+
+        pred_text = police_dict[pred[0]]
+        pred_out = np.zeros([200, 800], np.uint8)
+        cv2.putText(pred_out, pred_text, (0, 180), cv2.FONT_HERSHEY_SIMPLEX, 4, (255,255,255), 2)
+        cv2.imshow('PolicePose', z)
+        cv2.imshow('Prediction', pred_out)
+        cv2.waitKey(5)
+         
+        print(str(iter) + ' ' + pred_text)
+        iter=iter+1
 
     cap.release()
     cv2.destroyAllWindows()
