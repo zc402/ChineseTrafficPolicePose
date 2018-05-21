@@ -11,9 +11,10 @@ ChineseTrafficPolicePose is a network that classify
 
 **Environment**
 - Tested on Ubuntu 16.04 with laptop GPU gtx980m.
+- There must be **only 1 person** inside the video. Multiperson support is under developing.
 
 **Quick Start**
 - Download model file: [model - Jianguoyun](https://www.jianguoyun.com/p/DTxk84UQ9_LMBhiN1VU), extract and place 2 folders to policepose/logs and policepose/rnn_logs accrodingly.
 - Run <code>python3 rnn_webcam.py</code> to test on laptop camera.
-- To use OpenCV camera with python3, you might need to install OpenCV from source.
+- To use OpenCV camera with python3, you might need to compile OpenCV from source.
 
