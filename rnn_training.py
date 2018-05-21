@@ -2,12 +2,8 @@ import video_utils
 import tensorflow as tf
 import sys
 import parameters as pa
-import gpu_pipeline
-import gpu_network
 import rnn_network
 import numpy as np
-import matplotlib.pyplot as plt
-import skvideo.io
 import os
 import pysrt
 
@@ -171,7 +167,7 @@ def main(argv=None):
 
     sess.close()
 
-
+assert sys.version_info >= (3,5)
 if __name__ == "__main__":
     tf.app.run()
 exit(0)

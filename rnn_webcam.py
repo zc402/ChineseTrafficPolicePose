@@ -59,7 +59,6 @@ def main(argv=None):
         raise FileNotFoundError("RNN ckpt not found.")
 
     cap = cv2.VideoCapture(0)
-
     
     rnn_saved_state = None
     # Camera output
@@ -69,6 +68,7 @@ def main(argv=None):
     map_w = 512
     sk_out = np.zeros([map_h, map_w], np.uint8)
     iter = 0
+    assert cap.isOpened(),"Camera not supported."
     while cap.isOpened():
         ret, frame = cap.read()
         

@@ -1,7 +1,3 @@
-import matplotlib.pyplot as plt
-# import scipy.io
-# import skimage.io
-# import skimage.transform
 import os
 import numpy as np
 import tensorflow as tf
@@ -15,6 +11,7 @@ import parameters as pa
 
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_integer('batch_size', 15, "Batch size for training")
+
 
 BATCH_SIZE = FLAGS.batch_size
 LEARNING_RATE = 0.0008
