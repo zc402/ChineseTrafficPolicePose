@@ -83,19 +83,19 @@ def extract_features_from_joints(joint_tensor):
     head_v = bone_vector[:, 0, :] # I XY
     head_v = tf.expand_dims(head_v, axis=1) # I 1 XY
     head_scalar = tf.norm(head_v, axis=2) + 1e-7
-    body_v = bone_vector[:, 1:, :]  # I J XY
-    body_scalar = tf.norm(body_v, axis=2) + 1e-7  # I J
+    body_v = bone_vector[:, 1:, :]  # I B XY
+    body_scalar = tf.norm(body_v, axis=2) + 1e-7  # I B
     # [I][J]
     arm_wrt_head = body_scalar / head_scalar
     # Sine and cosine
     # down_vector: [0, 1] with norm of 1
     a_norm_b_norm = body_scalar  # * tf.norm(down_vector)->1  # I J
     cross_product = body_v[:, :, 0]
-    sine = cross_product / a_norm_b_norm  # I J
+    sine = cross_product / a_norm_b_norm  # I B
     dot_product = body_v[:, :, 1]
-    cosine = dot_product / a_norm_b_norm  # I J
+    cosine = dot_product / a_norm_b_norm  # I B
     # [I][Joint][Features]
-    joint_features = tf.stack([arm_wrt_head, sine, cosine], axis=2)  # I J F
+    joint_features = tf.stack([arm_wrt_head, sine, cosine], axis=2)  # I B F
     features = tf.reshape(joint_features, [joint_features.get_shape().as_list()[0], -1])  # I F
     # features = tf.Print(features, [features], summarize=100)
     return features
