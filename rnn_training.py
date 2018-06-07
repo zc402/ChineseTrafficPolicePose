@@ -5,13 +5,9 @@ import parameters as pa
 import rnn_network
 import numpy as np
 import os
-import pysrt
 
 LEARNING_RATE = 0.0004
 FLAGS = tf.flags.FLAGS
-tf.flags.DEFINE_string('mode', "train", "Train or test mode")
-tf.flags.DEFINE_integer('duration', 60, "Test video duration")
-
 
 def build_training_ops(loss_tensor):
     """
@@ -47,58 +43,12 @@ def print_log(loss_num, g_step_num, lr_num, itr):
     log_dict['Learning Rate'] = lr_num
     if itr % INTERVAL == 0:
         print(log_dict)
-
-
-def test_mode(sess, btjh, btc_pred_max, state, time_step):
-    # BATCH_SIZE is always 1 under test mode
-    police_dict = {
-        0: "--",
-        1: "STOP",
-        2: "PASS",
-        3: "TURN LEFT",
-        4: "LEFT WAIT",
-        5: "TURN RIGHT",
-        6: "CNG LANE",
-        7: "SLOW DOWN",
-        8: "GET OFF"}
-    v_name = "test"
-    # video_utils.save_joints_position(v_name)
-    joint_data = np.load(os.path.join(pa.RNN_SAVED_JOINTS_PATH, v_name + ".npy"))
-    pred_list = []
-    for time in range(0, len(joint_data)-time_step, time_step):
-        j_step = joint_data[time: time + time_step]
-        j_step = j_step[np.newaxis,:,:,:]  # Batch size = 1
-        feed_dict = {btjh: j_step}
-        btc_pred_num = sess.run(btc_pred_max, feed_dict = feed_dict)
-        pred = np.reshape(btc_pred_num, [-1])
-        [pred_list.append(p) for p in pred]
-
-    file = pysrt.SubRipFile()
-    for i, item in enumerate(pred_list):
-        total_ms = round((1000/15) * i)
-        total_s = total_ms // 1000
-        total_m = total_s // 60
-        start = '00:'+str(total_m %
-                          60)+':'+str(total_s %
-                                      60)+':'+str(total_ms %
-                                                  1000)
-        end = '00:'+str(total_m %
-                        60)+':'+str(total_s %
-                                    60)+':'+str(total_ms %
-                                                1000 + 14)
-        sub = pysrt.SubRipItem(i, start=start, end=end,
-                               text=police_dict[int(item)])
-        file.append(sub)
-    file.save(os.path.join(pa.VIDEO_FOLDER_PATH, 'test.srt'))
-
+        
 
 def main(argv=None):
-    if 'test' in FLAGS.mode:
-        BATCH_SIZE = 1
-        TIME_STEP = 15 * FLAGS.duration
-    else:
-        BATCH_SIZE = 128
-        TIME_STEP = 15 * 60
+
+    BATCH_SIZE = 128
+    TIME_STEP = 15 * 60
     NUM_CLASSES = 9  # 8 classes + 1 for no move
     NUM_JOINTS = 8
 
@@ -135,11 +85,6 @@ def main(argv=None):
     l_max = tf.argmax(btl_onehot, 2)
     correct_prediction = tf.equal(tf.argmax(btc_pred, 2), tf.argmax(btl_onehot, 2))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-
-    if 'test' in FLAGS.mode:
-        test_mode(sess, btjh, btc_pred_max, state, TIME_STEP)
-        sess.close()
-        exit(0)
 
     print("Training with batch size:"+str(BATCH_SIZE))
     # Load joint pos

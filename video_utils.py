@@ -15,7 +15,7 @@ from skimage.draw import line_aa
 assert sys.version_info >= (3, 5)
 
 
-def _class_per_frame(srt, total_frames, frame_rate, delay=15):
+def _class_per_frame(srt, total_frames, frame_rate, delay=23):
     """
     Convert srt subtitle to class per frame
     :param srt: subtitle path
