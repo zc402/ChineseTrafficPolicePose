@@ -15,6 +15,6 @@ ChineseTrafficPolicePose is a network that classify
 
 **Quick Start**
 - Download model file: [model - Jianguoyun](https://www.jianguoyun.com/p/DTxk84UQ9_LMBhiN1VU), extract and place 2 folders to policepose/logs and policepose/rnn_logs accrodingly.
-- Run <code>python3 evaluation.py</code> to test on laptop camera.
+- Run <code>python3 evaluate.py</code> to test on laptop camera.
 - To use OpenCV camera with python3, you might need to compile OpenCV from source.
 

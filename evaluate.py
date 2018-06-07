@@ -9,10 +9,10 @@ import evaluation_util
 
 FLAGS = tf.flags.FLAGS
 tf.flags.DEFINE_string('f', None, "path of file input")
+tf.flags.DEFINE_string('o', "evaluation.avi", "path of file output")
 
 def main(argv=None):
 
-    
     if FLAGS.f is not None:
         _run_on_video_file()
     else:
@@ -22,6 +22,9 @@ def main(argv=None):
 def _run_on_video_file():
     evaluate = evaluation_util.build_evaluation_network()
     analytic_picture = evaluation_util.result_analyzer()
+    # Define the codec and create VideoWriter object
+    fourcc = cv2.VideoWriter_fourcc(*'X264')
+    v_writer = cv2.VideoWriter(FLAGS.o, fourcc, 15.0, (1024, 1024))
     
     cap = cv2.VideoCapture(FLAGS.f)
 
@@ -32,14 +35,11 @@ def _run_on_video_file():
         np.true_divide(rgb, 255., out=rgb)
         pred, pcm, joint_xy, lsc18 = evaluate(rgb[np.newaxis])
         final_out = analytic_picture(frame, pred, pcm, joint_xy, lsc18)
-        
-        cv2.imshow('frame', final_out)
-        key = cv2.waitKey(1)
-        if key == 27:  # Esc key to stop
-            evaluate(None)
-            break
+        v_writer.write(final_out)
 
+    evaluate(None)
     cap.release()
+    v_writer.release()
     cv2.destroyAllWindows()
 
 

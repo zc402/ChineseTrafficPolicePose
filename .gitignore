@@ -5,4 +5,5 @@ dataset
 __pycache__
 vgg19.npy
 *.mp4
+*.avi
 *.swp

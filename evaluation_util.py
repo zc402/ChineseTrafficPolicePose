@@ -83,6 +83,12 @@ def build_evaluation_network():
     
     # Run evaluation for a frame
     def evaluate(frame):
+        
+        if frame is None:
+            sess1.close()
+            sess2.close()
+            return None
+            
         # Closure function. sessions and tensors is preserved globally
         feed_dict = {img_holder: frame}
         paf_pcm = sess1.run(paf_pcm_tensor, feed_dict=feed_dict)
@@ -99,9 +105,6 @@ def build_evaluation_network():
         rnn_saved_state = [state_num[0][0], state_num[1][0]]
         pred = np.reshape(btc_pred_num, [-1])
         
-        if frame is None:
-            sess1.close()
-            sess2.close()
         return pred, pcm, joint_xy, lsc18
             
     return evaluate
@@ -114,10 +117,10 @@ def result_analyzer():
     """
     final_out = np.zeros([512 * 2, 512 * 2, 3], dtype=np.uint8)
     
-    pose_name_out = final_out[0:512, 512:1024, :]
-    skeleton_out = final_out[512:1024, 0:512, :]
-    ana_out = final_out[512:1024, 512:1024, :]
-    
+    skeleton_out = final_out[0:512, 512:1024, :]
+    ana_out = final_out[512:1024, 0:512, :]
+    pose_name_out = final_out[512:1024, 512:1024, :]
+
     bone_colors = [(255, 0, 0), (255, 128, 0), (255, 255, 0), (64, 255, 0),
                    (0, 255, 255), (0, 0, 255), (255, 0, 255)]
     bone_colors_bgr = [(b, g, r) for r, g, b in bone_colors]
@@ -182,7 +185,7 @@ def result_analyzer():
                         1)
         pred_text = pa.police_dict[pred[0]]
         print(pred_text)
-        cv2.putText(pose_name_out, pred_text, (50, 256), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2)
+        cv2.putText(pose_name_out, pred_text, (100, 256), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2)
         final_out[0:512, 0:512, :] = frame
         return final_out
     return analytic_picture
