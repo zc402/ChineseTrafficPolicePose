@@ -43,12 +43,12 @@ def print_log(loss_num, g_step_num, lr_num, itr):
     log_dict['Learning Rate'] = lr_num
     if itr % INTERVAL == 0:
         print(log_dict)
-        
+
 
 def main(argv=None):
 
     BATCH_SIZE = 128
-    TIME_STEP = 15 * 60
+    TIME_STEP = 15 * 90
     NUM_CLASSES = 9  # 8 classes + 1 for no move
     NUM_JOINTS = 8
 

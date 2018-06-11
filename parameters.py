@@ -1,4 +1,5 @@
 import os
+import glob
 
 # Global Parameters
 PH, PW = (512, 512)
@@ -12,7 +13,13 @@ RESIZED_IMG_FOLDER = "dataset/gen/ai_challenger_ratio_kept"
 RNN_SAVED_JOINTS_PATH = "./dataset/gen/rnn_saved_joints"
 VIDEO_FOLDER_PATH = "dataset/policepose_video"
 # Training Video List
-VIDEO_LIST = [
+VIDEO_LIST = None
+if VIDEO_LIST is None:
+    VIDEO_LIST = glob.glob('dataset/policepose_video/train*.mp4')
+    VIDEO_LIST = [os.path.basename(p) for p in VIDEO_LIST]
+    VIDEO_LIST = [p.replace('.mp4', '') for p in VIDEO_LIST]
+    print(VIDEO_LIST)
+'''VIDEO_LIST = [
     "train10sec1",
     "train10sec2",
     "train10sec3",
@@ -23,7 +30,7 @@ VIDEO_LIST = [
     "train5sec2",
     "train5sec3",
     "train5sec4",
-    "train5sec5"]
+    "train5sec5"]'''
 
 bones = [[6, 7], [7, 2], [2, 1], [1, 0], [7, 3], [3, 4], [4, 5]]
 
@@ -34,7 +41,7 @@ police_dict = {
                 3: "TURN LEFT",
                 4: "LEFT WAIT",
                 5: "TURN RIGHT",
-                6: "CNG LANE",
+                6: "CHANGE LANE",
                 7: "SLOW DOWN",
                 8: "GET OFF"}
 
@@ -48,6 +55,7 @@ police_dict_chinese = {
                 6: "变道",
                 7: "减速",
                 8: "靠边停车"}
+
 
 def create_necessary_folders():
     def create(directory):

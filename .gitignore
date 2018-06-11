@@ -1,6 +1,6 @@
 dataset
 .idea/
-*logs
+*logs*
 *.pyc
 __pycache__
 vgg19.npy
