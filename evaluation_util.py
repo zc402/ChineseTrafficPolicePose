@@ -48,8 +48,8 @@ def build_evaluation_network():
 
         # batch_time_joint_holder:
         btjh = tf.placeholder(tf.float32, [1, 1, NUM_JOINTS, 2])  # 2:xy
-        c_state_holder = tf.placeholder(tf.float32, [32])
-        h_state_holder = tf.placeholder(tf.float32, [32])
+        c_state_holder = tf.placeholder(tf.float32, [pa.RNN_HIDDEN_UNITS])
+        h_state_holder = tf.placeholder(tf.float32, [pa.RNN_HIDDEN_UNITS])
 
         state_tuple = ([c_state_holder], [h_state_holder])
 
@@ -65,7 +65,7 @@ def build_evaluation_network():
             btc_pred_softmax = tf.nn.softmax(btc_pred, axis=2)
             rnn_saver = tf.train.Saver()
 
-    rnn_saved_state = [np.zeros(32), np.zeros(32)]
+    rnn_saved_state = [np.zeros(pa.RNN_HIDDEN_UNITS), np.zeros(pa.RNN_HIDDEN_UNITS)]
     # Restore CPM and LSTM
     sess1 = tf.Session(graph=g_1)
     sess2 = tf.Session(graph=g_2)
@@ -189,8 +189,8 @@ def result_analyzer():
                         1)
         pred_text = pa.police_dict[pred[0]]
         print(pred_text)
-        if pred_score < 0.9:
-            cv2.putText(pose_name_out, '-- *low confidence', (100, 128), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2)
+        if pred_score < 0.7:
+            cv2.putText(pose_name_out, '--  *LC', (100, 128), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2)
         else:
             cv2.putText(pose_name_out, pred_text, (100, 128), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2)
         cv2.putText(pose_name_out, str(pred_score), (100, 384), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2)

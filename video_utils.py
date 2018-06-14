@@ -4,24 +4,23 @@ import pysrt
 import tensorflow as tf
 import sys
 import parameters as pa
-#import gpu_pipeline
 import gpu_network
 import numpy as np
 import os
-from PIL import Image
 from skimage.draw import line_aa
 
 
 assert sys.version_info >= (3, 5)
 
 
-def _class_per_frame(srt, total_frames, frame_rate, delay=8):
+def _class_per_frame(srt, total_frames, frame_rate=15):
     """
     Convert srt subtitle to class per frame
     :param srt: subtitle path
     :param delay: delay the appearance of prediction
     :return: class per frame array
     """
+    delay = pa.SUBTITLE_DELAY_FRAMES
     subs = pysrt.open(srt)
     # Time of each frame (Millisecond)
     time_of_frame_list = [time / frame_rate * 1000
@@ -34,7 +33,10 @@ def _class_per_frame(srt, total_frames, frame_rate, delay=8):
         """
         for sub in subs:
             if sub.start.ordinal < time_of_frame_list[frame_num] < sub.end.ordinal:
-                return sub.text_without_tags
+                # Check if subtilte in range 1~8
+                text = sub.text_without_tags
+                assert(1 <= int(text) <=8, "wrong tag in subtilte file")
+                return text
         # No subtitle annotated
         return "0"
     class_list = [class_of_one_frame(num) for num in range(total_frames)]

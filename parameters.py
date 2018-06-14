@@ -12,8 +12,11 @@ MAX_ALLOWED_PEOPLE = 8
 RESIZED_IMG_FOLDER = "dataset/gen/ai_challenger_ratio_kept"
 RNN_SAVED_JOINTS_PATH = "./dataset/gen/rnn_saved_joints"
 VIDEO_FOLDER_PATH = "dataset/policepose_video"
+SUBTITLE_DELAY_FRAMES = 7
+RNN_HIDDEN_UNITS = 6
 # Training Video List
 VIDEO_LIST = None
+# Add all videos with name train*.mp4 as training video
 if VIDEO_LIST is None:
     VIDEO_LIST = glob.glob('dataset/policepose_video/train*.mp4')
     VIDEO_LIST = [os.path.basename(p) for p in VIDEO_LIST]

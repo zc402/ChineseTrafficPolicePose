@@ -89,7 +89,7 @@ def main(argv=None):
     print("Training with batch size:"+str(BATCH_SIZE))
     # Load joint pos
     jgen = video_utils.random_btj_btl_gen(BATCH_SIZE, TIME_STEP)
-    for itr in range(1, int(1e7)):
+    for itr in range(1, int(3e4)):
         btj, btl = next(jgen)
         feed_dict = {btjh: btj, btlh: btl}
         loss_num, g_step_num, lr_num, train_op = sess.run(

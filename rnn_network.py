@@ -12,7 +12,7 @@ def build_rnn_network(batch_time_input, n_classes, previous_states=None):
     :return:prediction_list, state of current rnn
     """
 
-    num_units = 32
+    num_units = pa.RNN_HIDDEN_UNITS
     # list [time_step][batch, n_classes]
     input_list = tf.unstack(batch_time_input, axis=1)
     lstm_layer = rnn.BasicLSTMCell(num_units=num_units)
@@ -53,7 +53,8 @@ def build_rnn_loss(lstm_prediction_list, batch_time_class_label):
         time_batch_loss = tf.nn.softmax_cross_entropy_with_logits_v2(
             logits=lstm_prediction_list[i], labels=t_bc_label_list[i])
         time_batch_loss_list.append(time_batch_loss)
-    loss = tf.reduce_mean(time_batch_loss_list)
+    # Do not compute the loss at the beginning of video
+    loss = tf.reduce_mean(time_batch_loss_list[pa.SUBTITLE_DELAY_FRAMES:])
     return loss
 
 
