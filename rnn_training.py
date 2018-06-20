@@ -6,7 +6,7 @@ import rnn_network
 import numpy as np
 import os
 
-LEARNING_RATE = 0.0004
+LEARNING_RATE = 0.005
 FLAGS = tf.flags.FLAGS
 
 def build_training_ops(loss_tensor):
@@ -89,7 +89,7 @@ def main(argv=None):
     print("Training with batch size:"+str(BATCH_SIZE))
     # Load joint pos
     jgen = video_utils.random_btj_btl_gen(BATCH_SIZE, TIME_STEP)
-    for itr in range(1, int(3e4)):
+    for itr in range(1, int(4e4)):
         btj, btl = next(jgen)
         feed_dict = {btjh: btj, btlh: btl}
         loss_num, g_step_num, lr_num, train_op = sess.run(
@@ -97,7 +97,7 @@ def main(argv=None):
         print_log(loss_num, g_step_num, lr_num, itr)
 
         # Summary
-        if itr % 300 == 0:
+        if itr % 200 == 0:
             btc_pred_num, l_max_num, acc = sess.run(
                 [btc_pred_max, l_max, accuracy],
                 feed_dict=feed_dict)

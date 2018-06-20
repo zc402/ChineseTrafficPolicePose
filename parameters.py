@@ -7,13 +7,13 @@ HEAT_ZOOMING_RATE = 8
 assert(PW % HEAT_ZOOMING_RATE == 0 and PH % HEAT_ZOOMING_RATE == 0)
 HEAT_H, HEAT_W = PW // HEAT_ZOOMING_RATE, PH // HEAT_ZOOMING_RATE
 HEAT_SIZE = (HEAT_W, HEAT_H)  # 64, 64
-MAX_ALLOWED_PEOPLE = 8
+MAX_ALLOWED_PEOPLE = 8  # Pictures with more people will be ignored in training
 
 RESIZED_IMG_FOLDER = "dataset/gen/ai_challenger_ratio_kept"
 RNN_SAVED_JOINTS_PATH = "./dataset/gen/rnn_saved_joints"
 VIDEO_FOLDER_PATH = "dataset/policepose_video"
 SUBTITLE_DELAY_FRAMES = 7
-RNN_HIDDEN_UNITS = 6
+RNN_HIDDEN_UNITS = 16
 # Training Video List
 VIDEO_LIST = None
 # Add all videos with name train*.mp4 as training video

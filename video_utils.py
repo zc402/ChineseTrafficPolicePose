@@ -35,7 +35,7 @@ def _class_per_frame(srt, total_frames, frame_rate=15):
             if sub.start.ordinal < time_of_frame_list[frame_num] < sub.end.ordinal:
                 # Check if subtilte in range 1~8
                 text = sub.text_without_tags
-                assert(1 <= int(text) <=8, "wrong tag in subtilte file")
+                assert 1 <= int(text) <=8, "wrong tag in subtilte file"
                 return text
         # No subtitle annotated
         return "0"
@@ -103,7 +103,7 @@ def save_joints_position(v_name=None):
                         c_coor_1d, [pa.HEAT_SIZE[1], pa.HEAT_SIZE[0]])
                     c_value = heat[c_coor_2d]
                     j_xy = []  # x,y
-                    if c_value > 0.15:
+                    if c_value > 0.3:
                         percent_h = c_coor_2d[0] / pa.HEAT_H
                         percent_w = c_coor_2d[1] / pa.HEAT_W
                         j_xy.append(percent_w)
