@@ -58,10 +58,9 @@ def build_evaluation_network():
             img_j_xy = tf.reshape(btjh, [-1, NUM_JOINTS, 2])
             img_fe = rnn_network.extract_features_from_joints(img_j_xy)
             btf = tf.reshape(img_fe, [1, 1, -1])
-            pred, state = rnn_network.build_rnn_network(btf, NUM_CLASSES, state_tuple)
+            pred, state = rnn_network.build_rnn_network(btf, NUM_CLASSES, training=False, previous_states=state_tuple)
             # model evaluation
             btc_pred = tf.transpose(pred, [1, 0, 2])  # TBC to BTC
-            btc_pred_max = tf.argmax(btc_pred, 2)
             btc_pred_softmax = tf.nn.softmax(btc_pred, axis=2)
             rnn_saver = tf.train.Saver()
 
@@ -102,7 +101,6 @@ def build_evaluation_network():
         feed_dict = {btjh: joint_data, c_state_holder: rnn_saved_state[0], h_state_holder: rnn_saved_state[1]}
         # Return: prediction, rnn previous state, 18 features
         btc_pred_softmax_num, state_num, lsc18 = sess2.run([btc_pred_softmax, state, img_fe], feed_dict=feed_dict)
-        # btc_pred_num, state_num, lsc18 = sess2.run([btc_pred_max, state, img_fe], feed_dict=feed_dict)
 
         btc_pred_num = np.argmax(btc_pred_softmax_num, axis=2)
         rnn_saved_state = [state_num[0][0], state_num[1][0]]

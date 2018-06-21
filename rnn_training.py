@@ -6,7 +6,7 @@ import rnn_network
 import numpy as np
 import os
 
-LEARNING_RATE = 0.005
+LEARNING_RATE = 0.001
 FLAGS = tf.flags.FLAGS
 
 def build_training_ops(loss_tensor):
@@ -18,7 +18,7 @@ def build_training_ops(loss_tensor):
     global_step = tf.Variable(0, trainable=False)
 
     decaying_learning_rate = tf.train.exponential_decay(
-        LEARNING_RATE, global_step, 20000, 0.8, staircase=True)
+        LEARNING_RATE, global_step, 10000, 0.8, staircase=True)
 
     optimizer = tf.train.AdamOptimizer(learning_rate=decaying_learning_rate)
     grads = optimizer.compute_gradients(loss_tensor)
@@ -47,7 +47,7 @@ def print_log(loss_num, g_step_num, lr_num, itr):
 
 def main(argv=None):
 
-    BATCH_SIZE = 128
+    BATCH_SIZE = 256
     TIME_STEP = 15 * 90
     NUM_CLASSES = 9  # 8 classes + 1 for no move
     NUM_JOINTS = 8
@@ -62,7 +62,7 @@ def main(argv=None):
         img_j_xy = tf.reshape(btjh, [-1, NUM_JOINTS, 2])
         img_fe = rnn_network.extract_features_from_joints(img_j_xy)
         btf = tf.reshape(img_fe, [BATCH_SIZE, TIME_STEP, -1])
-        pred, state = rnn_network.build_rnn_network(btf, NUM_CLASSES)
+        pred, state = rnn_network.build_rnn_network(btf, NUM_CLASSES, training=True)
         loss = rnn_network.build_rnn_loss(pred, btl_onehot)
         lgdts_tensor = build_training_ops(loss)
 

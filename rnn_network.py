@@ -3,7 +3,7 @@ from tensorflow.contrib import rnn
 import parameters as pa
 
 
-def build_rnn_network(batch_time_input, n_classes, previous_states=None):
+def build_rnn_network(batch_time_input, n_classes, training, previous_states=None):
     """
     build rnn network
     :param previous_states: States of previous rnn network
@@ -21,6 +21,9 @@ def build_rnn_network(batch_time_input, n_classes, previous_states=None):
     lstm_outputs, last_states = rnn.static_rnn(
         lstm_layer, input_list, initial_state=previous_states, dtype=tf.float32)
 
+    # Dropout
+    lstm_outputs_dp = [tf.layers.dropout(output, training=training) for output in lstm_outputs]
+
     # Fully connect outputs to class_num
     # weights and biases of fully connected layer
     out_weights = tf.Variable(tf.random_normal([num_units, n_classes]))
@@ -32,7 +35,7 @@ def build_rnn_network(batch_time_input, n_classes, previous_states=None):
         tf.matmul(
             output,
             out_weights) +
-        out_bias for output in lstm_outputs]
+        out_bias for output in lstm_outputs_dp]
 
     return lstm_prediction_list, last_states
 
