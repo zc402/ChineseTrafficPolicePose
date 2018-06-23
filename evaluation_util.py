@@ -26,7 +26,6 @@ def _parse_joint(pcm):
         # Joint points
         joint_parts.append(j_xy)  # [j][XY]
 
-    # video_utils.save_joints_position(v_name)
     joint_xy = np.asarray(joint_parts)
     return joint_xy
 

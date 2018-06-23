@@ -12,7 +12,7 @@ MAX_ALLOWED_PEOPLE = 8  # Pictures with more people will be ignored in training
 RESIZED_IMG_FOLDER = "dataset/gen/ai_challenger_ratio_kept"
 RNN_SAVED_JOINTS_PATH = "./dataset/gen/rnn_saved_joints"
 VIDEO_FOLDER_PATH = "dataset/policepose_video"
-SUBTITLE_DELAY_FRAMES = 7
+SUBTITLE_DELAY_FRAMES = 12
 RNN_HIDDEN_UNITS = 32
 # Training Video List
 VIDEO_LIST = None
