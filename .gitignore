@@ -7,3 +7,5 @@ vgg19.npy
 *.mp4
 *.avi
 *.swp
+.ipynb_checkpoints
+_cache
