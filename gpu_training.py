@@ -15,7 +15,7 @@ import label_loader
 
 
 BATCH_SIZE = 10
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.0005
 
 
 def build_training_ops(loss_tensor):

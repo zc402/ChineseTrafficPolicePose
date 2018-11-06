@@ -165,11 +165,11 @@ class PoseNet:
         """
         Add images of paf_pcm to tensorboard
         """
-        tf.summary.image("L1-Final", tf.expand_dims(self.layer_dict['mconv7_stage3_l1'][:, :, :, 0], axis=-1))
-        tf.summary.image("L2-Final", tf.expand_dims(self.layer_dict['mconv7_stage3_l2'][:, :, :, 0], axis=-1))
+        tf.summary.image("L1-Final", tf.reduce_max(self.layer_dict['mconv7_stage3_l1'], axis=3, keepdims=True))
+        tf.summary.image("L2-Final", tf.reduce_max(self.layer_dict['mconv7_stage3_l2'], axis=3, keepdims=True))
         tf.summary.image("IMAGE", self.layer_dict['image'])
-        tf.summary.image("L1-GT", tf.expand_dims(self.layer_dict['paf_gt'][:, :, :, 0], axis=-1))
-        tf.summary.image("L2-GT", tf.expand_dims(self.layer_dict['pcm_gt'][:, :, :, 0], axis=-1))
+        tf.summary.image("L1-GT", tf.reduce_max(self.layer_dict['paf_gt'], axis=3, keepdims=True))
+        tf.summary.image("L2-GT", tf.reduce_max(self.layer_dict['pcm_gt'], axis=3, keepdims=True))
     
     def build_paf_pcm_loss(self, img_nhwc, pcm_nhwc, paf_nhwc):
         """
