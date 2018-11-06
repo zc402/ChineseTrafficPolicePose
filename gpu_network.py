@@ -80,14 +80,14 @@ class PoseNet:
              .conv(128, 3, 'conv_5_2_cpm_l1')
              .conv(128, 3, 'conv_5_3_cpm_l1')
              .conv(512, 1, 'conv_5_4_cpm_l1')
-             .conv(7*2, 1, 'conv_5_5_cpm_l1', relu=False))
+             .conv(11*2, 1, 'conv_5_5_cpm_l1', relu=False))
 
         (self.feed('conv_4_4_cpm')
              .conv(128, 3, 'conv_5_1_cpm_l2')
              .conv(128, 3, 'conv_5_2_cpm_l2')
              .conv(128, 3, 'conv_5_3_cpm_l2')
              .conv(512, 1, 'conv_5_4_cpm_l2')
-             .conv(8, 1, 'conv_5_5_cpm_l2', relu=False))
+             .conv(14, 1, 'conv_5_5_cpm_l2', relu=False))
 
         (self.concat(['conv_5_5_cpm_l1', 'conv_5_5_cpm_l2', 'conv_4_4_cpm'], 'concat_stage2')
              .conv(128, 7, 'mconv1_stage2_l1')
@@ -96,7 +96,7 @@ class PoseNet:
              .conv(128, 7, 'mconv4_stage2_l1')
              .conv(128, 7, 'mconv5_stage2_l1')
              .conv(128, 1, 'mconv6_stage2_l1')
-             .conv(7*2, 1, 'mconv7_stage2_l1', relu=False))
+             .conv(11*2, 1, 'mconv7_stage2_l1', relu=False))
 
         (self.feed('concat_stage2')
              .conv(128, 7, 'mconv1_stage2_l2')
@@ -105,7 +105,7 @@ class PoseNet:
              .conv(128, 7, 'mconv4_stage2_l2')
              .conv(128, 7, 'mconv5_stage2_l2')
              .conv(128, 1, 'mconv6_stage2_l2')
-             .conv(8, 1, 'mconv7_stage2_l2', relu=False)
+             .conv(14, 1, 'mconv7_stage2_l2', relu=False)
          )
 
         (self.concat(['mconv7_stage2_l1', 'mconv7_stage2_l2', 'conv_4_4_cpm'], 'concat_stage3')
@@ -115,7 +115,7 @@ class PoseNet:
              .conv(128, 7, 'mconv4_stage3_l1')
              .conv(128, 7, 'mconv5_stage3_l1')
              .conv(128, 1, 'mconv6_stage3_l1')
-             .conv(7*2, 1, 'mconv7_stage3_l1', relu=False))
+             .conv(11*2, 1, 'mconv7_stage3_l1', relu=False))
         (self.feed('concat_stage3')
              .conv(128, 7, 'mconv1_stage3_l2')
              .conv(128, 7, 'mconv2_stage3_l2')
@@ -123,7 +123,7 @@ class PoseNet:
              .conv(128, 7, 'mconv4_stage3_l2')
              .conv(128, 7, 'mconv5_stage3_l2')
              .conv(128, 1, 'mconv6_stage3_l2')
-             .conv(8, 1, 'mconv7_stage3_l2', relu=False)
+             .conv(14, 1, 'mconv7_stage3_l2', relu=False)
          )
 
         self.concat(['mconv7_stage3_l1', 'mconv7_stage3_l2'], 'paf_pcm_output')
@@ -148,11 +148,11 @@ class PoseNet:
             if 'mconv7' in layer_name and '_l2' in layer_name:
                 l2s.append(self.layer_dict[layer_name])
         for i, l1 in enumerate(l1s):
-            loss = tf.nn.l2_loss(l1 - batch_paf) / batch_size  / 14
+            loss = tf.nn.l2_loss(l1 - batch_paf) / batch_size / (11*2)
             tf.summary.scalar(name='l1_stage'+str(i+1), tensor=loss)
             l1s_loss.append(loss)
         for i, l2 in enumerate(l2s):
-            loss = tf.nn.l2_loss(l2 - batch_pcm) / batch_size / 8
+            loss = tf.nn.l2_loss(l2 - batch_pcm) / batch_size / 14
             tf.summary.scalar(name='l2_stage'+str(i+1), tensor=loss)
             l2s_loss.append(loss)
         total_l1_loss = tf.reduce_mean(l1s_loss)
@@ -161,7 +161,7 @@ class PoseNet:
         tf.summary.scalar(name='total_loss', tensor=total_loss)
         return total_loss
 
-    def _add_paf_summary(self):
+    def _add_pcm_paf_summary(self):
         """
         Add images of paf_pcm to tensorboard
         """
@@ -171,16 +171,16 @@ class PoseNet:
         tf.summary.image("L1-GT", tf.expand_dims(self.layer_dict['paf_gt'][:, :, :, 0], axis=-1))
         tf.summary.image("L2-GT", tf.expand_dims(self.layer_dict['pcm_gt'][:, :, :, 0], axis=-1))
     
-    def build_paf_pcm_loss(self, img_tensor, i_hv_tensor):
+    def build_paf_pcm_loss(self, img_nhwc, pcm_nhwc, paf_nhwc):
         """
         Build the loss of paf_pcm, only used on training paf_pcm layers
-        :param img_tensor:
+        :param img_nhwc:
         :param i_hv_tensor:
         :return: A scalar loss tensor
         """
-        self.inference_paf_pcm(img_tensor)
-        total_loss = self._loss_paf_pcm(i_hv_tensor[:, :, :, :8], i_hv_tensor[:, :, :, 8:])
-        self._add_paf_summary()
+        self.inference_paf_pcm(img_nhwc)
+        total_loss = self._loss_paf_pcm(pcm_nhwc, paf_nhwc)
+        self._add_pcm_paf_summary()
         return total_loss
         
 

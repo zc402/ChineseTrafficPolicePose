@@ -5,16 +5,17 @@ from random import shuffle
 from PIL import Image
 import sys
 
-import gpu_pipeline
+# import gpu_pipeline
 import gpu_network
 import parameters as pa
+import label_loader
 
-FLAGS = tf.flags.FLAGS
-tf.flags.DEFINE_integer('batch_size', 15, "Batch size for training")
+# FLAGS = tf.flags.FLAGS
+# tf.flags.DEFINE_integer('batch_size', 15, "Batch size for training")
 
 
-BATCH_SIZE = FLAGS.batch_size
-LEARNING_RATE = 0.0008
+BATCH_SIZE = 10
+LEARNING_RATE = 0.001
 
 
 def build_training_ops(loss_tensor):
@@ -26,7 +27,7 @@ def build_training_ops(loss_tensor):
     global_step = tf.Variable(0, trainable=False)
     
     decaying_learning_rate = tf.train.exponential_decay(LEARNING_RATE, global_step,
-                                           20000, 0.8, staircase=True)
+                                           50000, 0.1, staircase=True)
     
     optimizer = tf.train.AdamOptimizer(learning_rate=decaying_learning_rate)
     grads = optimizer.compute_gradients(loss_tensor)
@@ -55,12 +56,13 @@ def main(argv=None):
     print("Training with batch size: " + str(BATCH_SIZE))
     # Place Holder
     PH, PW = pa.PH, pa.PW
-    ipjc_holder = tf.placeholder(tf.float32, [BATCH_SIZE, 8, 6+2, 3])
+    HEAT_H, HEAT_W = pa.HEAT_H, pa.HEAT_W
+    PCM_nhwc_holder = tf.placeholder(tf.float32, [BATCH_SIZE, HEAT_H, HEAT_W, 14])
+    PAF_nhwc_holder = tf.placeholder(tf.float32, [BATCH_SIZE, HEAT_H, HEAT_W, 11 * 2])
     img_holder = tf.placeholder(tf.float32, [BATCH_SIZE, PH, PW, 3])
     # Entire network
-    img_tensor, i_hv_tensor = gpu_pipeline.build_training_pipeline(ipjc_holder, img_holder)
     poseNet = gpu_network.PoseNet()
-    loss_tensor = poseNet.build_paf_pcm_loss(img_tensor, i_hv_tensor)
+    loss_tensor = poseNet.build_paf_pcm_loss(img_holder, PCM_nhwc_holder, PAF_nhwc_holder)
     lgdts_tensor = build_training_ops(loss_tensor)
     
     # Session Saver summary_writer
@@ -79,10 +81,11 @@ def main(argv=None):
     # Close the graph so no op can be added
     tf.get_default_graph().finalize()
     # Load samples from disk
-    samples_gen = gpu_pipeline.training_samples_gen(BATCH_SIZE)
+    gen_PCM_PAF_IMG = label_loader.generator_PCM_PAF_IMG(BATCH_SIZE, (512, 512), 8)
+
     for itr in range(1, int(1e7)):
-        batch_img, batch_ipjc = next(samples_gen)
-        feed_dict = {img_holder: batch_img, ipjc_holder: batch_ipjc}
+        BC, BA, BI = next(gen_PCM_PAF_IMG)
+        feed_dict = {img_holder: BI, PCM_nhwc_holder: BC, PAF_nhwc_holder: BA}
         loss_num, g_step_num, lr_num, train_op = sess.run(lgdts_tensor[0:4], feed_dict=feed_dict)
         print_log(loss_num, g_step_num, lr_num, itr)
         
