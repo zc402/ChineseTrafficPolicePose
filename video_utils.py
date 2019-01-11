@@ -1,10 +1,8 @@
-import skvideo.io
 # from skimage.viewer import ImageViewer
-import pysrt
 import tensorflow as tf
 import sys
 import parameters as pa
-import gpu_network
+import PAF_network
 import numpy as np
 import os
 from skimage.draw import line_aa
@@ -74,7 +72,7 @@ def save_joints_position(v_name=None):
     # Place Holder
     img_holder = tf.placeholder(tf.float32, [batch_size, v_height, v_width, 3])
     # Entire network
-    paf_pcm_tensor = gpu_network.PoseNet().inference_paf_pcm(img_holder)
+    paf_pcm_tensor = PAF_network.PoseNet().inference_paf_pcm(img_holder)
 
     # Place for argmax values
     joint_ixy = list()  # [i][j0~6][x,y]

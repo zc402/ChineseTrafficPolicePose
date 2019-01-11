@@ -1,6 +1,6 @@
 import parameters as pa
 import tensorflow as tf
-import gpu_network
+import PAF_network
 import rnn_network
 import cv2
 import numpy as np
@@ -38,7 +38,7 @@ def build_evaluation_network():
         # Place Holder
         img_holder = tf.placeholder(tf.float32, [batch_size, pa.PH, pa.PW, 3])
         # Entire network
-        paf_pcm_tensor = gpu_network.PoseNet().inference_paf_pcm(img_holder)
+        paf_pcm_tensor = PAF_network.PoseNet().inference_paf_pcm(img_holder)
         saver = tf.train.Saver()
 
     with g_2.as_default():

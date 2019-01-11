@@ -1,7 +1,7 @@
 
 import parameters as pa
 import tensorflow as tf
-import gpu_network
+import PAF_network
 import rnn_network
 import cv2
 import numpy as np

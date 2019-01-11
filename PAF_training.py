@@ -6,7 +6,7 @@ from PIL import Image
 import sys
 
 # import gpu_pipeline
-import gpu_network
+import PAF_network
 import parameters as pa
 import label_loader
 
@@ -61,7 +61,7 @@ def main(argv=None):
     PAF_nhwc_holder = tf.placeholder(tf.float32, [BATCH_SIZE, HEAT_H, HEAT_W, 11 * 2])
     img_holder = tf.placeholder(tf.float32, [BATCH_SIZE, PH, PW, 3])
     # Entire network
-    poseNet = gpu_network.PoseNet()
+    poseNet = PAF_network.PoseNet()
     loss_tensor = poseNet.build_paf_pcm_loss(img_holder, PCM_nhwc_holder, PAF_nhwc_holder)
     lgdts_tensor = build_training_ops(loss_tensor)
     
