@@ -46,10 +46,45 @@ class VideoToTempFile:
         cap.release()
         return num_list
 
+class LabelUtil:
+
+    def load_label(self, csv_file):
+        """
+        Label file is a csv file using number to mark gesture for each frame
+        example content: 0,0,0,2,2,2,2,2,0,0,0,0,0
+        :param csv_file:
+        :return: list of int
+        """
+        with open(csv_file, 'r') as label_file:
+            labels = label_file.read()
+
+        labels = labels.split(",")
+        labels = [int(l) for l in labels]
+        # Labels is a list of int, representing gesture for each frame
+        return labels
+
+    def save_label(self, label_list, csv_file):
+        """
+
+        :param label_list: a list of int
+        :param csv_file:
+        :return:
+        """
+        str_line = ",".join(map(str, label_list))
+
+        with open(csv_file, 'w') as label_file:
+            label_file.write(str_line)
+
+
 
 class FlowBoxWindow(Gtk.Window):
 
+
     def __init__(self, file_numbers):
+        """
+
+        :param file_numbers: a ordered list of numbers, referenced to the file name
+        """
         Gtk.Window.__init__(self, title="Hello World")
 
         self.set_border_width(10)
@@ -74,16 +109,22 @@ class FlowBoxWindow(Gtk.Window):
         self.add(scrolled)
         self.show_all()
 
+    def thumbnail_onclick(self, button, data):
+        frame = data["frame"]
+        print(frame)
+
+    # Create a button with picture on it
     def new_thumbnail_button(self, num_frame):
 
         filepath = os.path.join(THUMBNAIL_PATH, str(num_frame) + ".png")
         button = Gtk.Button()
         img = Gtk.Image.new_from_file(filepath)
         button.add(img)
+        button.connect("clicked", self.thumbnail_onclick, {"frame": num_frame})
 
         return button
 
-    # Fill color to area
+    # Fill color to color bar
     def on_draw(self, widget, cr, data):
 
         context = widget.get_style_context()
@@ -97,9 +138,15 @@ class FlowBoxWindow(Gtk.Window):
         cr.rectangle(0, 0, width, height)
         cr.fill()
 
-    def create_flowbox(self, flowbox, file_numbers):
+    def create_flowbox(self, flowbox, frame_list):
+        """
+        Create the flowing box containing picture and color bar
+        :param flowbox: parent widget
+        :param frame_list: int list contains file number
+        :return:
+        """
 
-        for num_frame in file_numbers:
+        for num_frame in frame_list:
             grid = Gtk.Grid()
             btn = self.new_thumbnail_button(num_frame)
 
