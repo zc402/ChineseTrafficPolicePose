@@ -80,15 +80,20 @@ class LabelUtil:
 class FlowBoxWindow(Gtk.Window):
 
 
-    def __init__(self, ):
-        self.dict_area_widget = {}  # dict of {integer: widget}, for controlling area color
-        self.dict_area_color = {}  # dict of {integer: string}, indicating the color of area
-        self.select1 = None  # Firstly selected picture
-
-    def create_window(self, file_numbers):
+    def __init__(self, list_label, thumbnail_numbers):
         """
 
-        :param file_numbers: a ordered list of numbers, referenced to the file name
+        :param list_label: list of label, containing class numbers of each frame.
+        :param thumbnail_numbers: a ordered list of numbers, referenced to the file name
+        """
+        self.list_label = list_label
+        self.thumbnail_numbers = thumbnail_numbers
+        self.select1 = None  # Firstly selected picture
+        self.flowbox_layout = None  # Needed by updating color of draw area
+
+    def create_window(self):
+        """
+
         :return:
         """
         Gtk.Window.__init__(self, title="Hello World")
@@ -109,7 +114,7 @@ class FlowBoxWindow(Gtk.Window):
         flowbox.set_max_children_per_line(30)
         flowbox.set_selection_mode(Gtk.SelectionMode.NONE)
 
-        self.create_flowbox(flowbox, file_numbers)
+        self.create_flowbox(flowbox, self.thumbnail_numbers)
 
         scrolled.add(flowbox)
         self.add(scrolled)
@@ -123,9 +128,16 @@ class FlowBoxWindow(Gtk.Window):
         :return:
         """
         frame = data["frame"]
-        self.dict_area_color[frame] = 'red'
-        self.dict_area_widget[frame].queue_draw()  # Refresh the widget
-        print(frame)
+
+        if self.select1 is None:  # selecting 1st picture
+            self.select1 = frame
+        else:  # Selecting 2nd picture
+            select1 = self.select1
+            select2 = frame
+            # Change the labels
+            self.select1 = None
+
+        self.flowbox_layout.queue_draw()  # Refresh widgets
 
     # Create a button with picture on it
     def new_thumbnail_button(self, num_frame):
@@ -138,6 +150,17 @@ class FlowBoxWindow(Gtk.Window):
 
         return button
 
+    def choose_color_by_frame(self, frame):
+        label = self.list_label[frame]
+        if label == 0:
+            str_color = "white"
+        else:
+            str_color = "red"
+
+        color = Gdk.color_parse(str_color)
+        rgba = Gdk.RGBA.from_color(color)
+        return rgba
+
     # Fill color to color bar
     def area_on_draw(self, widget, cr, data):
 
@@ -147,10 +170,7 @@ class FlowBoxWindow(Gtk.Window):
         Gtk.render_background(context, cr, 0, 0, width, height)
 
         frame = data['frame']
-        str_color = data['dict_color'][frame]
-        color = Gdk.color_parse(str_color)
-        r,g,b,a = Gdk.RGBA.from_color(color)
-
+        r,g,b,a = self.choose_color_by_frame(frame)
         cr.set_source_rgba(r,g,b,a)
         cr.rectangle(0, 0, width, height)
         cr.fill()
@@ -162,34 +182,31 @@ class FlowBoxWindow(Gtk.Window):
         :param frame_list: int list contains file number
         :return:
         """
-        for num_frame in frame_list:
-            self.dict_area_color[num_frame] = 'blue'
 
         for num_frame in frame_list:
             grid = Gtk.Grid()
             btn = self.new_thumbnail_button(num_frame)
 
             area = Gtk.DrawingArea()
-            self.dict_area_widget[num_frame] = area
             area.set_size_request(20, 20)
 
-            area.connect("draw", self.area_on_draw, {'frame': num_frame, 'dict_color': self.dict_area_color})
+            area.connect("draw", self.area_on_draw, {'frame': num_frame})
             grid.add(btn)
             grid.attach_next_to(area, btn, Gtk.PositionType.BOTTOM, 1, 2)
 
             flowbox.add(grid)
+            self.flowbox_layout = flowbox
 
     def release(self):
-        del self.dict_area_widget
-        del self.dict_area_widget
+        del self.flowbox_layout
 
 
 
 vtf = VideoToTempFile()
 numbers = vtf.save("/home/zc/eval6.mp4")
 
-win = FlowBoxWindow()
-win.create_window(numbers)
+win = FlowBoxWindow(list(np.zeros(numbers[-1])), numbers)
+win.create_window()
 win.connect("destroy", Gtk.main_quit)
 win.show_all()
 Gtk.main()
