@@ -44,7 +44,7 @@ class VideoToTempFile:
                 print(savedir)
 
         cap.release()
-        return num_list
+        return num_list  # Start from 5
 
 class LabelUtil:
 
@@ -88,7 +88,9 @@ class FlowBoxWindow(Gtk.Window):
         """
         self.list_label = list_label
         self.thumbnail_numbers = thumbnail_numbers
-        self.select1 = None  # Firstly selected picture
+        self.select1 = None  # First selected picture
+        self.select2 = None  # Second selected picture
+        self.key_pressed = None  # Pressed key for marking label
         self.flowbox_layout = None  # Needed by updating color of draw area
 
     def create_window(self):
@@ -120,6 +122,27 @@ class FlowBoxWindow(Gtk.Window):
         self.add(scrolled)
         self.show_all()
 
+    def mark_label_key_press(self, widget, event):
+        key_name = Gdk.keyval_name(event.keyval)
+        key_val = event.keyval  # '0': value=48 1:49 9:57
+        if 48 <= key_val <= 57:
+            label = key_val-48  # label: int number of 0~9
+            print("Marked: %d" % label)
+            self.key_pressed = label
+            widget.destroy()
+        else:  # keys other than 0~9 are not supported
+            self.key_pressed = None
+            print("Invalid key %s" % key_name)
+
+    def create_mark_label_prompt(self):
+        self.key_pressed = None  # No key pressed, canceled directly
+        dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.INFO,
+            Gtk.ButtonsType.CANCEL, "Press 0~9 on keyboard to mark a label!")
+        # dialog.format_secondary_text("Press cancel to return")
+        dialog.connect("key-press-event", self.mark_label_key_press)
+        dialog.run()  # Block until dialog closed
+        dialog.destroy()
+
     def thumbnail_onclick(self, button, data):
         """
         Clicked on picture
@@ -131,11 +154,20 @@ class FlowBoxWindow(Gtk.Window):
 
         if self.select1 is None:  # selecting 1st picture
             self.select1 = frame
-        else:  # Selecting 2nd picture
-            select1 = self.select1
-            select2 = frame
-            # Change the labels
+        elif (self.select1 is not None) and (self.select2 is None):  # selecting 2nd picture
+            if frame <= self.select1:  # Selected a previous picture, not allowed
+                return
+            self.select2 = frame
+            self.create_mark_label_prompt()  # key stored in self.key_pressed
+            # Two cases: key pressed, or canceled
+            if self.key_pressed is not None:
+                for i_frame in range(self.select1, self.select2+1, 1):
+                    self.list_label[i_frame] = self.key_pressed
+
             self.select1 = None
+            self.select2 = None
+        else:  # Selecting 3rd picture
+            pass
 
         self.flowbox_layout.queue_draw()  # Refresh widgets
 
@@ -161,7 +193,7 @@ class FlowBoxWindow(Gtk.Window):
         rgba = Gdk.RGBA.from_color(color)
         return rgba
 
-    # Fill color to color bar
+    # Draw the color bar, or change it's color
     def area_on_draw(self, widget, cr, data):
 
         context = widget.get_style_context()
@@ -174,6 +206,10 @@ class FlowBoxWindow(Gtk.Window):
         cr.set_source_rgba(r,g,b,a)
         cr.rectangle(0, 0, width, height)
         cr.fill()
+
+    def class_label_on_draw(self, widget, cr, data):
+        # print("TODO: update label here")
+        pass
 
     def create_flowbox(self, flowbox, frame_list):
         """
@@ -189,10 +225,16 @@ class FlowBoxWindow(Gtk.Window):
 
             area = Gtk.DrawingArea()
             area.set_size_request(20, 20)
-
             area.connect("draw", self.area_on_draw, {'frame': num_frame})
+            # Add drawing area
             grid.add(btn)
             grid.attach_next_to(area, btn, Gtk.PositionType.BOTTOM, 1, 2)
+
+            class_label = Gtk.Label()
+            class_label.set_text("1")
+            class_label.set_justify(Gtk.Justification.LEFT)
+            area.connect("draw", self.class_label_on_draw, {'frame': num_frame})
+            grid.attach_next_to(class_label, area, Gtk.PositionType.LEFT, 1,1)
 
             flowbox.add(grid)
             self.flowbox_layout = flowbox
