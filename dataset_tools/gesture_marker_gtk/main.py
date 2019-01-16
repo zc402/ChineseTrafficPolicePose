@@ -86,7 +86,8 @@ class FlowBoxWindow(Gtk.Window):
         :param list_label: list of label, containing class numbers of each frame.
         :param thumbnail_numbers: a ordered list of numbers, referenced to the file name
         """
-        self.list_label = list_label
+        self.list_label = list_label  # A list containing labels.
+        self.label_widgets = []  # A list containing widgets, showing labels of each image
         self.thumbnail_numbers = thumbnail_numbers
         self.select1 = None  # First selected picture
         self.select2 = None  # Second selected picture
@@ -182,18 +183,21 @@ class FlowBoxWindow(Gtk.Window):
 
         return button
 
-    def choose_color_by_frame(self, frame):
-        label = self.list_label[frame]
-        if label == 0:
+    def update_text_color_by_frame(self, frame, text):
+        cls = self.list_label[frame]
+        if cls == 0:
             str_color = "white"
+            text.set_text(" ")
         else:
-            str_color = "red"
+            str_color = "aquamarine"
+            text.set_text(str(cls))
 
         color = Gdk.color_parse(str_color)
         rgba = Gdk.RGBA.from_color(color)
         return rgba
 
     # Draw the color bar, or change it's color
+    # Also change the number
     def area_on_draw(self, widget, cr, data):
 
         context = widget.get_style_context()
@@ -202,14 +206,19 @@ class FlowBoxWindow(Gtk.Window):
         Gtk.render_background(context, cr, 0, 0, width, height)
 
         frame = data['frame']
-        r,g,b,a = self.choose_color_by_frame(frame)
+        widget_label = data['widget_label']
+        r,g,b,a = self.update_text_color_by_frame(frame, widget_label)
         cr.set_source_rgba(r,g,b,a)
         cr.rectangle(0, 0, width, height)
         cr.fill()
 
+
     def class_label_on_draw(self, widget, cr, data):
-        # print("TODO: update label here")
-        pass
+        cls = self.list_label[data['frame']]  # A number representing class
+        #if cls == 0:
+        #    widget.set_text(" ")
+        #else:
+        #    widget.set_text(str(cls))
 
     def create_flowbox(self, flowbox, frame_list):
         """
@@ -223,18 +232,14 @@ class FlowBoxWindow(Gtk.Window):
             grid = Gtk.Grid()
             btn = self.new_thumbnail_button(num_frame)
 
-            area = Gtk.DrawingArea()
-            area.set_size_request(20, 20)
-            area.connect("draw", self.area_on_draw, {'frame': num_frame})
+            #area = Gtk.DrawingArea()
+            widget_cls_label = Gtk.Label()
+            widget_cls_label.set_text("2")
+            widget_cls_label.set_size_request(20, 20)
+            widget_cls_label.connect("draw", self.area_on_draw, {'frame': num_frame, 'widget_label': widget_cls_label})
             # Add drawing area
             grid.add(btn)
-            grid.attach_next_to(area, btn, Gtk.PositionType.BOTTOM, 1, 2)
-
-            class_label = Gtk.Label()
-            class_label.set_text("1")
-            class_label.set_justify(Gtk.Justification.LEFT)
-            area.connect("draw", self.class_label_on_draw, {'frame': num_frame})
-            grid.attach_next_to(class_label, area, Gtk.PositionType.LEFT, 1,1)
+            grid.attach_next_to(widget_cls_label, btn, Gtk.PositionType.BOTTOM, 1, 2)
 
             flowbox.add(grid)
             self.flowbox_layout = flowbox
