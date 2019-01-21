@@ -4,10 +4,10 @@ Global parameters
 import os
 import glob
 
-PH, PW = (512, 512)
+PH, PW = (512, 512)  # Size of network input picture
 HEAT_ZOOMING_RATE = 8
 assert(PW % HEAT_ZOOMING_RATE == 0 and PH % HEAT_ZOOMING_RATE == 0)
-HEAT_H, HEAT_W = PW // HEAT_ZOOMING_RATE, PH // HEAT_ZOOMING_RATE
+HEAT_H, HEAT_W = PW // HEAT_ZOOMING_RATE, PH // HEAT_ZOOMING_RATE  # Size of heatmap
 HEAT_SIZE = (HEAT_W, HEAT_H)  # 64, 64
 MAX_ALLOWED_PEOPLE = 8  # Pictures with more people will be ignored in training
 
@@ -16,6 +16,7 @@ RNN_SAVED_JOINTS_PATH = "./dataset/gen/rnn_saved_joints"
 VIDEO_FOLDER_PATH = "dataset/policepose_video"
 SUBTITLE_DELAY_FRAMES = 12
 RNN_HIDDEN_UNITS = 32
+PCM2JOINT_THRESHOLD = 0.3  # Threshold for converting pcms to joint coordinates. Otherwise -1.
 # Training Video List
 VIDEO_LIST = None
 # Add all videos with name train*.mp4 as training video

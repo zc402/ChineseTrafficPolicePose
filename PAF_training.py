@@ -66,7 +66,7 @@ def main(argv=None):
     # Entire network
     poseNet = PAF_network.PoseNet()
     loss_tensor = poseNet.build_paf_pcm_loss(img_holder, PCM_nhwc_holder, PAF_nhwc_holder)
-    lgdts_tensor = build_training_ops(loss_tensor)
+    lgdts_tensor = build_training_ops(loss_tensor)  #[loss_tensor, global_step, decaying_learning_rate, train_op, summary_op]
     
     # Session Saver summary_writer
     sess = tf.Session()
