@@ -1,3 +1,6 @@
+"""
+Training entrance for Part Affinity Field
+"""
 import os
 import numpy as np
 import tensorflow as tf

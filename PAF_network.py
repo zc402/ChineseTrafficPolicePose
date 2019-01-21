@@ -1,3 +1,6 @@
+"""
+Network architecture for Part Affinity Field
+"""
 import tensorflow as tf
 from tensorflow.contrib import layers
 

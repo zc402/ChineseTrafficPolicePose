@@ -1,3 +1,8 @@
+"""
+Contains loader that loads AI_Challenger keypoint dataset.
+Converts points to PCMs and PAFs
+Resize the image
+"""
 import os
 import pickle
 import json

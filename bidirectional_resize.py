@@ -1,3 +1,7 @@
+"""
+This file contains image resize function.
+It resize an image to a specific size, than resize it back after detection.
+"""
 import cv2
 import sys
 import numpy as np

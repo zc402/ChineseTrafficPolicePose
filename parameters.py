@@ -1,7 +1,9 @@
+"""
+Global parameters
+"""
 import os
 import glob
 
-# Global Parameters
 PH, PW = (512, 512)
 HEAT_ZOOMING_RATE = 8
 assert(PW % HEAT_ZOOMING_RATE == 0 and PH % HEAT_ZOOMING_RATE == 0)
