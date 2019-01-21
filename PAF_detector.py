@@ -95,6 +95,8 @@ class ShowResults:
             ret, frame = cap.read()
             if ret == False:
                 break
+            frame = frame.astype(np.float32)
+            frame = frame / 255.
             heatmaps = detector.detect_np_pic_ret_PCMs(frame)
             heatmaps = heatmaps.max(axis=(0,3))
             # Enlarge heat image
