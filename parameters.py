@@ -3,6 +3,7 @@ Global parameters
 """
 import os
 import glob
+import numpy as np
 
 PH, PW = (512, 512)  # Size of network input picture
 HEAT_ZOOMING_RATE = 8
@@ -16,7 +17,10 @@ RNN_SAVED_JOINTS_PATH = "./dataset/gen/rnn_saved_joints"
 VIDEO_FOLDER_PATH = "dataset/policepose_video"
 SUBTITLE_DELAY_FRAMES = 12
 RNN_HIDDEN_UNITS = 32
-PCM2JOINT_THRESHOLD = 0.3  # Threshold for converting pcms to joint coordinates. Otherwise -1.
+PCM2JOINT_THRESHOLD = 0.5  # Threshold for converting pcms to joint coordinates. Otherwise -1.
+NUM_PCM = 14
+NUM_PAF = 11*2
+RES_IMG_WH = 512
 # Training Video List
 VIDEO_LIST = None
 # Add all videos with name train*.mp4 as training video
@@ -38,7 +42,8 @@ if VIDEO_LIST is None:
     "train5sec4",
     "train5sec5"]'''
 
-bones = [[6, 7], [7, 2], [2, 1], [1, 0], [7, 3], [3, 4], [4, 5]]
+bones = [[1,2], [2,3], [4,5], [5,6], [14,1], [14,4], [7,8], [8,9], [10,11], [11,12], [13,14]]
+bones = np.array(bones)-1
 
 police_dict = {
                 0: "--",
@@ -49,7 +54,7 @@ police_dict = {
                 5: "TURN RIGHT",
                 6: "CHANGE LANE",
                 7: "SLOW DOWN",
-                8: "GET OFF"}
+                8: "PULL OVER"}
 
 police_dict_chinese = {
                 0: "--",
