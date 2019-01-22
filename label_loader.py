@@ -12,6 +12,7 @@ import numpy as np
 import cv2
 from imgaug import augmenters as iaa
 import imgaug as ia
+import parameters as pa
 
 def load_aicha(folder_path):
     """
@@ -47,11 +48,17 @@ def load_aicha(folder_path):
             # Check image existence
             if not os.path.exists(full_path):
                 raise FileNotFoundError("Image " + full_path + " not found")
+            # Exclude images with too many people
+            num_people = len(json_img['keypoint_annotations'])
+            if num_people >= pa.MAX_ALLOWED_PEOPLE:
+                continue  # Do not put into list
+
             list_PA.append((full_path, json_img))
 
     print("Read " + str(len(list_PA)) + " image labels.")
     with open("./_cache/label.bin", "wb+") as f:
         pickle.dump(list_PA, f)
+        print("Cache for label generated.")
     return list_PA
 
 # load_aicha_to_list("/media/zc/Ext4-1TB/AI_challenger_keypoint")
@@ -212,8 +219,8 @@ def part_confidence_map(label, img_wh, zoom_times):
         for j in range(14):  # each joint
             x,y,v = p_xyv[j]
             x,y = (x//zoom_times, y//zoom_times)
-            if v < 2.5:
-                heat = _pcm_1pt(x, y, heat_w, heat_h, 1.8)
+            if v < 1.5:  # Only include visible joints !
+                heat = _pcm_1pt(x, y, heat_w, heat_h, pa.GAUSSIAN_VAR)
             else:
                 heat = np.zeros([heat_h, heat_w], dtype=np.float32)
             heat_jhw.append(heat)
@@ -344,7 +351,7 @@ def generator_PCM_PAF_IMG(batch_size, img_size, heat_zoom):
     :return:
     """
     while True:
-        annotations = load_aicha("/media/zc/Ext4-1TB/AI_challenger_keypoint")
+        annotations = load_aicha(pa.TRAIN_FOLDER)
         random.shuffle(annotations)
 
         for i in range(0, len(annotations)-batch_size, batch_size):

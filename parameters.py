@@ -10,9 +10,10 @@ HEAT_ZOOMING_RATE = 8
 assert(PW % HEAT_ZOOMING_RATE == 0 and PH % HEAT_ZOOMING_RATE == 0)
 HEAT_H, HEAT_W = PW // HEAT_ZOOMING_RATE, PH // HEAT_ZOOMING_RATE  # Size of heatmap
 HEAT_SIZE = (HEAT_W, HEAT_H)  # 64, 64
-MAX_ALLOWED_PEOPLE = 8  # Pictures with more people will be ignored in training
+MAX_ALLOWED_PEOPLE = 4  # Pictures with more people will be ignored in training
+GAUSSIAN_VAR = 1.1  # Variance for 2D gaussian
 
-RESIZED_IMG_FOLDER = "dataset/gen/ai_challenger_ratio_kept"
+TRAIN_FOLDER = "/media/zc/Ext4-1TB/AI_challenger_keypoint"
 RNN_SAVED_JOINTS_PATH = "./dataset/gen/rnn_saved_joints"
 VIDEO_FOLDER_PATH = "dataset/policepose_video"
 SUBTITLE_DELAY_FRAMES = 12
@@ -72,7 +73,7 @@ def create_necessary_folders():
     def create(directory):
         if not os.path.exists(directory):
             os.makedirs(directory)
-    dirs = ["./logs", "rnn_logs/", "./dataset/gen", RESIZED_IMG_FOLDER,
+    dirs = ["./logs", "rnn_logs/", "./dataset/gen",
             VIDEO_FOLDER_PATH, "./dataset/AI_challenger_keypoint",
             RNN_SAVED_JOINTS_PATH]
     [create(d) for d in dirs]
