@@ -11,7 +11,7 @@ THUMBNAIL_PATH = "./temp"
 class VideoToTempFile:
 
     def __init__(self):
-        self.num_frame = 0
+        self.num_frame = -1  # Save name starting from frame 0
 
     def _check_video(self, vcap):
         fps = vcap.get(5)
@@ -142,7 +142,7 @@ class FlowBoxWindow(Gtk.Window):
         self.connect("key-press-event", self.main_win_key_press)
         self.show_all()
 
-    def main_win_key_press(self):
+    def main_win_key_press(self, widget, event):
         # TODO: ctrl-s to save
         pass
 
@@ -271,7 +271,7 @@ if __name__ == "__main__":
     if not os.path.exists(args.video):
         raise FileNotFoundError()
     vtf = VideoToTempFile()
-    numbers = vtf.save(args.video)
+    temp_frame_nums = vtf.save(args.video)
 
     if os.path.exists(args.csv):
         # Read csv
@@ -280,7 +280,7 @@ if __name__ == "__main__":
         length = vtf.length(args.video)
         label_list = np.zeros(int(length)).tolist()
 
-    win = FlowBoxWindow(label_list, numbers, args.csv)
+    win = FlowBoxWindow(label_list, temp_frame_nums, args.csv)
     win.create_window()
     win.connect("destroy", Gtk.main_quit)
     win.show_all()
