@@ -49,18 +49,18 @@ bones = np.array(bones)-1
 police_dict = {
                 0: "--",
                 1: "STOP",
-                2: "PASS",
-                3: "TURN LEFT",
-                4: "LEFT WAIT",
-                5: "TURN RIGHT",
-                6: "CHANGE LANE",
+                2: "MOVE STRAIGHT",
+                3: "LEFT TURN",
+                4: "LEFT TURN WAITING",
+                5: "RIGHT TURN",
+                6: "LANG CHANGING",
                 7: "SLOW DOWN",
                 8: "PULL OVER"}
 
 police_dict_chinese = {
                 0: "--",
                 1: "停止",
-                2: "通行",
+                2: "直行",
                 3: "左转",
                 4: "左待转",
                 5: "右转",
