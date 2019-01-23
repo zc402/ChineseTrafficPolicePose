@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 import os
 import glob
-
+import argparse
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GdkPixbuf
@@ -20,6 +20,7 @@ class VideoToTempFile:
 
     def save(self, video):
 
+        # Remove thumbnail caches
         if os.path.exists(THUMBNAIL_PATH):
             temp_pngs = glob.glob(os.path.join(THUMBNAIL_PATH, "*.png"))
             [os.remove(p) for p in temp_pngs]
@@ -36,15 +37,19 @@ class VideoToTempFile:
             self.num_frame = self.num_frame + 1
 
             if self.num_frame % 5 == 0:
-                thumbnail = cv2.resize(frame, (100, 100))
+                thumbnail = cv2.resize(frame, (150, 150))
                 savedir = "%d.png" % self.num_frame
                 savedir = os.path.join(THUMBNAIL_PATH, savedir)
                 cv2.imwrite(savedir, thumbnail)
                 num_list.append(self.num_frame)
                 print(savedir)
-
         cap.release()
-        return num_list  # Start from 5
+        return num_list # numlist Start from 5
+
+    def length(self, video):
+        cap = cv2.VideoCapture(video)
+        length = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+        return length
 
 class LabelUtil:
 
@@ -70,17 +75,19 @@ class LabelUtil:
         :param csv_file:
         :return:
         """
-        str_line = ",".join(map(str, label_list))
+        str_list = ["%d" % e for e in label_list]
+        str_line = ",".join(str_list)
 
         with open(csv_file, 'w') as label_file:
             label_file.write(str_line)
+        print("saved: %s" % csv_file)
 
 
 
 class FlowBoxWindow(Gtk.Window):
 
 
-    def __init__(self, list_label, thumbnail_numbers):
+    def __init__(self, list_label, thumbnail_numbers, csv_path):
         """
 
         :param list_label: list of label, containing class numbers of each frame.
@@ -93,6 +100,7 @@ class FlowBoxWindow(Gtk.Window):
         self.select2 = None  # Second selected picture
         self.key_pressed = None  # Pressed key for marking label
         self.flowbox_layout = None  # Needed by updating color of draw area
+        self.csv_path = csv_path
 
     def create_window(self):
         """
@@ -121,9 +129,14 @@ class FlowBoxWindow(Gtk.Window):
 
         scrolled.add(flowbox)
         self.add(scrolled)
+        self.connect("key-press-event", self.main_win_key_press)
         self.show_all()
 
-    def mark_label_key_press(self, widget, event):
+    def main_win_key_press(self):
+        # TODO: ctrl-s to save
+        pass
+
+    def label_dialog_key_press(self, widget, event):
         key_name = Gdk.keyval_name(event.keyval)
         key_val = event.keyval  # '0': value=48 1:49 9:57
         if 48 <= key_val <= 57:
@@ -138,9 +151,9 @@ class FlowBoxWindow(Gtk.Window):
     def create_mark_label_prompt(self):
         self.key_pressed = None  # No key pressed, canceled directly
         dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.INFO,
-            Gtk.ButtonsType.CANCEL, "Press 0~9 on keyboard to mark a label!")
-        # dialog.format_secondary_text("Press cancel to return")
-        dialog.connect("key-press-event", self.mark_label_key_press)
+            Gtk.ButtonsType.CANCEL, "Marking: %d to %d" % (self.select1, self.select2))
+        dialog.format_secondary_text("Press 0~9 on keyboard to mark a label!")
+        dialog.connect("key-press-event", self.label_dialog_key_press)
         dialog.run()  # Block until dialog closed
         dialog.destroy()
 
@@ -164,9 +177,11 @@ class FlowBoxWindow(Gtk.Window):
             if self.key_pressed is not None:
                 for i_frame in range(self.select1, self.select2+1, 1):
                     self.list_label[i_frame] = self.key_pressed
-
             self.select1 = None
             self.select2 = None
+            self.key_pressed = None
+            LabelUtil().save_label(self.list_label, self.csv_path)
+
         else:  # Selecting 3rd picture
             pass
 
@@ -212,14 +227,6 @@ class FlowBoxWindow(Gtk.Window):
         cr.rectangle(0, 0, width, height)
         cr.fill()
 
-
-    def class_label_on_draw(self, widget, cr, data):
-        cls = self.list_label[data['frame']]  # A number representing class
-        #if cls == 0:
-        #    widget.set_text(" ")
-        #else:
-        #    widget.set_text(str(cls))
-
     def create_flowbox(self, flowbox, frame_list):
         """
         Create the flowing box containing picture and color bar
@@ -232,7 +239,6 @@ class FlowBoxWindow(Gtk.Window):
             grid = Gtk.Grid()
             btn = self.new_thumbnail_button(num_frame)
 
-            #area = Gtk.DrawingArea()
             widget_cls_label = Gtk.Label()
             widget_cls_label.set_text("2")
             widget_cls_label.set_size_request(20, 20)
@@ -247,13 +253,25 @@ class FlowBoxWindow(Gtk.Window):
     def release(self):
         del self.flowbox_layout
 
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("video", type=str, help="video file to be annotated")
+    parser.add_argument("csv", type=str, help="csv file")
+    args = parser.parse_args()
+    if not os.path.exists(args.video):
+        raise FileNotFoundError()
+    vtf = VideoToTempFile()
+    numbers = vtf.save(args.video)
 
+    if os.path.exists(args.csv):
+        # Read csv
+        label_list = LabelUtil().load_label(args.csv)
+    else: # File not exist
+        length = vtf.length(args.video)
+        label_list = np.zeros(int(length)).tolist()
 
-vtf = VideoToTempFile()
-numbers = vtf.save("/home/zc/eval6.mp4")
-
-win = FlowBoxWindow(list(np.zeros(numbers[-1])), numbers)
-win.create_window()
-win.connect("destroy", Gtk.main_quit)
-win.show_all()
-Gtk.main()
+    win = FlowBoxWindow(label_list, numbers, args.csv)
+    win.create_window()
+    win.connect("destroy", Gtk.main_quit)
+    win.show_all()
+    Gtk.main()
