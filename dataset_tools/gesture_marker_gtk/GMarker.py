@@ -4,6 +4,7 @@ import os
 import glob
 import argparse
 import gi
+import parameters as pa
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GdkPixbuf
 
@@ -138,8 +139,8 @@ class FlowBoxWindow(Gtk.Window):
 
     def label_dialog_key_press(self, widget, event):
         key_name = Gdk.keyval_name(event.keyval)
-        key_val = event.keyval  # '0': value=48 1:49 9:57
-        if 48 <= key_val <= 57:
+        key_val = event.keyval  # '0': value=48 '1':49 '9':57
+        if 48 <= key_val <= 56:  # 0~8
             label = key_val-48  # label: int number of 0~9
             print("Marked: %d" % label)
             self.key_pressed = label
@@ -152,7 +153,7 @@ class FlowBoxWindow(Gtk.Window):
         self.key_pressed = None  # No key pressed, canceled directly
         dialog = Gtk.MessageDialog(self, 0, Gtk.MessageType.INFO,
             Gtk.ButtonsType.CANCEL, "Marking: %d to %d" % (self.select1, self.select2))
-        dialog.format_secondary_text("Press 0~9 on keyboard to mark a label!")
+        dialog.format_secondary_text("Press 0~8 on keyboard to mark a label!")
         dialog.connect("key-press-event", self.label_dialog_key_press)
         dialog.run()  # Block until dialog closed
         dialog.destroy()
@@ -205,7 +206,7 @@ class FlowBoxWindow(Gtk.Window):
             text.set_text(" ")
         else:
             str_color = "aquamarine"
-            text.set_text(str(cls))
+            text.set_text("%s: %s"%(str(cls), pa.police_dict_chinese[cls]))
 
         color = Gdk.color_parse(str_color)
         rgba = Gdk.RGBA.from_color(color)
@@ -240,7 +241,7 @@ class FlowBoxWindow(Gtk.Window):
             btn = self.new_thumbnail_button(num_frame)
 
             widget_cls_label = Gtk.Label()
-            widget_cls_label.set_text("2")
+            widget_cls_label.set_text("?")
             widget_cls_label.set_size_request(20, 20)
             widget_cls_label.connect("draw", self.area_on_draw, {'frame': num_frame, 'widget_label': widget_cls_label})
             # Add drawing area
