@@ -37,9 +37,9 @@ class PAF_detect:
         :param pafpcm:
         :return: [joint, xy] width, height of joint coor w.r.t WHOLE IMAGE
         """
-        pcm = paf_pcm[:, :, :, pa.NUM_PAF:]
+        pcm = paf_pcm[:, :, :, pa.NUM_PAFs:]
         pcm = np.clip(pcm, 0., 1.)
-        j_xy_precent = np.zeros((pa.NUM_PCM, 2), np.float32)
+        j_xy_precent = np.zeros((pa.NUM_PCMs, 2), np.float32)
         for idx_joint in range(pcm.shape[3]):  # This many joints
             heat = pcm[0, :, :, idx_joint]  # first and only image from batch
             c_coor_1d = np.argmax(heat)  # Index of biggest confidence value
@@ -78,7 +78,7 @@ class PAF_detect:
         np_pic = np_pic[np.newaxis]
         feed_dict = {self.img_holder: np_pic}
         paf_pcm = self.sess.run(self.tensor_paf_pcm, feed_dict=feed_dict)
-        pcm = paf_pcm[:, :, :, 14:]
+        pcm = paf_pcm[:, :, :, pa.NUM_PAFs:]
         pcm = np.clip(pcm, 0., 1.)
         return pcm
 
@@ -152,6 +152,7 @@ class ShowResults:
             ret, frame = cap.read()
             if not ret:
                 break
+            frame = cv2.resize(frame, (pa.PW, pa.PH))
             frame = frame.astype(np.float32)
             frame = frame / 255.
             hms = detector.detect_np_pic_ret_PCMs(frame)  # Heatmaps: 0~1
@@ -176,6 +177,7 @@ class ShowResults:
             ret, frame = cap.read()
             if not ret:
                 break
+            frame = cv2.resize(frame, (pa.PW, pa.PH))
             frame = frame.astype(np.float32)
             frame = frame / 255.
             percent_joints = detector.detect_np_pic(frame)

@@ -18,9 +18,9 @@ RNN_SAVED_JOINTS_PATH = "./dataset/gen/rnn_saved_joints"
 VIDEO_FOLDER_PATH = "dataset/policepose_video"
 SUBTITLE_DELAY_FRAMES = 12
 RNN_HIDDEN_UNITS = 32
-PCM2JOINT_THRESHOLD = 0.5  # Threshold for converting pcms to joint coordinates. Otherwise -1.
-NUM_PCM = 14
-NUM_PAF = 11*2
+PCM2JOINT_THRESHOLD = 0.3  # Threshold for converting pcms to joint coordinates. Otherwise -1.
+NUM_PCMs = 14
+NUM_PAFs = 11 * 2
 RES_IMG_WH = 512
 # Training Video List
 VIDEO_LIST = None
