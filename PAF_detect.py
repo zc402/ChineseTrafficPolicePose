@@ -85,6 +85,41 @@ class PAF_detect:
     def release(self):
         self.sess.close()
 
+    def save_joint_positions(self, video_path):
+        """
+        Predict joint positions. (percent)
+        Save joint positions from a video to file
+        :param video_path: path of video
+        :return:
+        """
+        # video_path = os.path.join(pa.VIDEO_FOLDER_PATH, v_name + ".mp4")
+        detector = PAF_detect()
+        cap = cv2.VideoCapture(video_path)
+        frame_jxy = []  # shape [frame, joint, xy]
+        if not cap.isOpened():
+            raise FileNotFoundError("%s can't be opened by OpenCV" % video_path)
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frame = cv2.resize(frame, (pa.HEAT_W, pa.HEAT_H), interpolation=cv2.INTER_CUBIC)
+            frame = frame.astype(np.float32)
+            frame = frame / 255.
+            percent_joints = detector.detect_np_pic(frame)
+            frame_jxy.append(percent_joints)
+
+        video_name = os.path.basename(video_path)
+        video_name, ext = os.path.splitext(video_name)
+        save_path = os.path.join(
+            pa.RNN_SAVED_JOINTS_PATH,
+            video_name + ".npy")
+        if os.path.exists(save_path):
+            print("Override old file")
+            os.remove(save_path)
+        frame_jxy = np.asarray(frame_jxy)
+        np.save(save_path, frame_jxy)
+        print("Joints saved: %s " % save_path)
+
 class ShowResults:
     def __init__(self):
         gray14 = np.linspace(0, 255, 14, endpoint=False, dtype=np.uint8)
@@ -172,8 +207,12 @@ if __name__ == "__main__":
     parser.add_argument("file", type=str, help="video or image file path")
     parser.add_argument("-m", help="show heatmap video", default=False, action="store_true")
     parser.add_argument("-b", help="show bone video", default=False, action="store_true")
+    parser.add_argument("-s", help="save joint positions to file", default=False, action="store_true")
     args = parser.parse_args()
     if args.m:
         ShowResults().video_to_heatmaps(args.file)
     elif args.b:
         ShowResults().video_to_bones(args.file)
+    elif args.s:
+        print("Saving joint positions...")
+        PAF_detect().save_joint_positions(args.file)
