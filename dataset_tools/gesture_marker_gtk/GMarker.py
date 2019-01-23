@@ -4,7 +4,6 @@ import os
 import glob
 import argparse
 import gi
-import parameters as pa
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GdkPixbuf
 
@@ -53,6 +52,16 @@ class VideoToTempFile:
         return length
 
 class LabelUtil:
+    police_dict_chinese = {
+        0: "--",
+        1: "停止",
+        2: "直行",
+        3: "左转",
+        4: "左待转",
+        5: "右转",
+        6: "变道",
+        7: "减速",
+        8: "靠边停车"}
 
     def load_label(self, csv_file):
         """
@@ -206,7 +215,7 @@ class FlowBoxWindow(Gtk.Window):
             text.set_text(" ")
         else:
             str_color = "aquamarine"
-            text.set_text("%s: %s"%(str(cls), pa.police_dict_chinese[cls]))
+            text.set_text("%s: %s"%(str(cls), LabelUtil.police_dict_chinese[cls]))
 
         color = Gdk.color_parse(str_color)
         rgba = Gdk.RGBA.from_color(color)
