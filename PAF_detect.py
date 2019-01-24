@@ -165,6 +165,8 @@ class ShowResults:
             k = cv2.waitKey(5)
             if k == 27:  # ESC
                 break
+            elif k == ord('p'):  # Pause
+                cv2.waitKey(0)
         cap.release()
         detector.release()
 
