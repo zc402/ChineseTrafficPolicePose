@@ -4,4 +4,4 @@
 # vu.skeleton_video("test")
 
 import PAF_detect as dt
-dt.ShowResults().video_to_heatmaps("/home/zc/eval6.mp4")
+dt.ShowResults().show_PCMs("/home/zc/eval6.mp4")

@@ -54,7 +54,7 @@ def skeleton_video(name):
     map_h = 512
     map_w = 512
     joint_data_path = os.path.join(
-        pa.RNN_SAVED_JOINTS_PATH,
+        pa.RNN_SAVED_JOINTS_FOLDER,
         name + ".npy")
     joint_data = np.load(joint_data_path)
     video = []
@@ -88,7 +88,7 @@ def skeleton_video(name):
 def random_btj_btl_gen(batch_size, time_steps):
     "Load joint pos with labels at random time"
     video_names = pa.VIDEO_LIST
-    joints_paths = [os.path.join(pa.RNN_SAVED_JOINTS_PATH, video_name + ".npy") for video_name in video_names]
+    joints_paths = [os.path.join(pa.RNN_SAVED_JOINTS_FOLDER, video_name + ".npy") for video_name in video_names]
     # Joints: [F] I J XY. Joints in each film
     joints_data_list = [np.load(p) for p in joints_paths]
     fe_length_list = [len(j) for j in joints_data_list]

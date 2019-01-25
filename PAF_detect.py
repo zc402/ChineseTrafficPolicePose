@@ -9,11 +9,10 @@ import tensorflow as tf
 import cv2
 import sys
 import argparse
-
+import glob
 # import gpu_pipeline
 import PAF_network
 import parameters as pa
-
 
 class PAF_detect:
     def __init__(self):
@@ -61,7 +60,7 @@ class PAF_detect:
         """
         Detect 1 numpy picture, return normalized joint coor
         :param np_pic:
-        :return: joint positions
+        :return: joint positions [joint, xy]
         """
         np_pic = np_pic[np.newaxis]
         feed_dict = {self.img_holder: np_pic}
@@ -84,41 +83,6 @@ class PAF_detect:
 
     def release(self):
         self.sess.close()
-
-    def save_joint_positions(self, video_path):
-        """
-        Predict joint positions. (percent)
-        Save joint positions from a video to file
-        :param video_path: path of video
-        :return:
-        """
-        # video_path = os.path.join(pa.VIDEO_FOLDER_PATH, v_name + ".mp4")
-        detector = PAF_detect()
-        cap = cv2.VideoCapture(video_path)
-        frame_jxy = []  # shape [frame, joint, xy]
-        if not cap.isOpened():
-            raise FileNotFoundError("%s can't be opened by OpenCV" % video_path)
-        while cap.isOpened():
-            ret, frame = cap.read()
-            if not ret:
-                break
-            frame = cv2.resize(frame, (pa.HEAT_W, pa.HEAT_H), interpolation=cv2.INTER_CUBIC)
-            frame = frame.astype(np.float32)
-            frame = frame / 255.
-            percent_joints = detector.detect_np_pic(frame)
-            frame_jxy.append(percent_joints)
-
-        video_name = os.path.basename(video_path)
-        video_name, ext = os.path.splitext(video_name)
-        save_path = os.path.join(
-            pa.RNN_SAVED_JOINTS_PATH,
-            video_name + ".npy")
-        if os.path.exists(save_path):
-            print("Override old file")
-            os.remove(save_path)
-        frame_jxy = np.asarray(frame_jxy)
-        np.save(save_path, frame_jxy)
-        print("Joints saved: %s " % save_path)
 
 class ShowResults:
     def __init__(self):
@@ -143,7 +107,7 @@ class ShowResults:
         return colored_img
     """
 
-    def video_to_heatmaps(self, video):
+    def show_PCMs(self, video):
         detector = PAF_detect()
         cap = cv2.VideoCapture(video)
         if not cap.isOpened():
@@ -170,7 +134,7 @@ class ShowResults:
         cap.release()
         detector.release()
 
-    def video_to_bones(self, video):
+    def show_bone_connections(self, video):
         detector = PAF_detect()
         cap = cv2.VideoCapture(video)
         if not cap.isOpened():
@@ -208,17 +172,63 @@ class ShowResults:
         cap.release()
         detector.release()
 
+class SaveFeatures:
+    def save_joint_percent_values(self, video):
+        detector = PAF_detect()
+        people_joints = []
+        cap = cv2.VideoCapture(video)
+        if not cap.isOpened():
+            raise FileNotFoundError("%s can't be opened by OpenCV" % video)
+        v_size = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        v_fps = int(cap.get(cv2.CAP_PROP_FPS))
+        if v_fps != 15:
+            raise ValueError("video %s have a frame rate of %d, not 15." % (video, v_fps))
+        current_frame = 0
+        while(cap.isOpened()):
+            ret, frame = cap.read()
+            if not ret:
+                break
+            current_frame = current_frame+1
+            frame = cv2.resize(frame, (pa.PW, pa.PH))
+            frame = frame.astype(np.float32)
+            frame = frame / 255.
+            percent_joints = detector.detect_np_pic(frame)
+            people_joints.append(percent_joints)
+            print("Parsing frame %d of %d frames" % (current_frame, v_size))
+        cap.release()
+        detector.release()
+        people_joints = np.asarray(people_joints, dtype=np.float32)
+        video_name = os.path.basename(video)
+        video_name, _ = os.path.splitext(video_name)
+        save_path = os.path.join(pa.RNN_SAVED_JOINTS_FOLDER, video_name+".npy")
+        np.save(save_path, people_joints)
+        print("Video file %d parsed and saved!" % video)
+
+    def parse_save_mp4_files(self, folder):
+        wildcard_path = os.path.join(folder, "*.mp4")
+        mp4_list = glob.glob(wildcard_path)
+        for mp4 in mp4_list:
+            self.save_joint_percent_values(mp4)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='detect PAFs')
     parser.add_argument("file", type=str, help="video or image file path")
     parser.add_argument("-m", help="show heatmap video", default=False, action="store_true")
     parser.add_argument("-b", help="show bone video", default=False, action="store_true")
     parser.add_argument("-s", help="save joint positions to file", default=False, action="store_true")
+    parser.add_argument("-a", help="parse and save all mp4 from folder", default=False, action="store_true")
     args = parser.parse_args()
     if args.m:
-        ShowResults().video_to_heatmaps(args.file)
+        ShowResults().show_PCMs(args.file)
     elif args.b:
-        ShowResults().video_to_bones(args.file)
+        ShowResults().show_bone_connections(args.file)
     elif args.s:
         print("Saving joint positions...")
-        PAF_detect().save_joint_positions(args.file)
+        SaveFeatures().save_joint_percent_values(args.file)
+    elif args.a:
+        print("Saving joint positions from folder")
+        if os.path.isdir(args.file):
+            SaveFeatures().parse_save_mp4_files(args.file)
+        else:
+            raise FileNotFoundError("%s is not a folder" % args.file)

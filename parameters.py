@@ -14,7 +14,7 @@ MAX_ALLOWED_PEOPLE = 4  # Pictures with more people will be ignored in training
 GAUSSIAN_VAR = 1.1  # Variance for 2D gaussian
 
 TRAIN_FOLDER = "/media/zc/Ext4-1TB/AI_challenger_keypoint"
-RNN_SAVED_JOINTS_PATH = "./dataset/gen/rnn_saved_joints"
+RNN_SAVED_JOINTS_FOLDER = "./dataset/gen/rnn_saved_joints"
 VIDEO_FOLDER_PATH = "dataset/policepose_video"
 SUBTITLE_DELAY_FRAMES = 12
 RNN_HIDDEN_UNITS = 32
@@ -75,5 +75,5 @@ def create_necessary_folders():
             os.makedirs(directory)
     dirs = ["./logs", "rnn_logs/", "./dataset/gen",
             VIDEO_FOLDER_PATH, "./dataset/AI_challenger_keypoint",
-            RNN_SAVED_JOINTS_PATH]
+            RNN_SAVED_JOINTS_FOLDER]
     [create(d) for d in dirs]
