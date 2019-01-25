@@ -281,13 +281,13 @@ def part_affinity_field(label, img_wh, zoom_times):
 
 # Image Augmentation
 seq = iaa.Sequential([
-    # iaa.Fliplr(0.5),  # horizontal flips
+    # Don't flip LR! that will break the defination of Left and Right!
+    iaa.Multiply((0.2, 1.5)),
+    iaa.ContrastNormalization((0.3, 1.5)),
     iaa.Affine(
         rotate=(-25, 25),
         scale={"x": (0.7, 1.3), "y": (0.7, 1.3)},
     ),  # TODO: light decrease
-    iaa.Multiply((0.3, 1.5)),
-    iaa.ContrastNormalization((0.3, 1.5)),
 ], random_order=True)  # apply augmenters in random order
 
 
