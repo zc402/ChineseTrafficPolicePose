@@ -284,7 +284,10 @@ seq = iaa.Sequential([
     # iaa.Fliplr(0.5),  # horizontal flips
     iaa.Affine(
         rotate=(-25, 25),
-    )
+        scale={"x": (0.7, 1.3), "y": (0.7, 1.3)},
+    ),  # TODO: light decrease
+    iaa.Multiply((0.3, 1.5)),
+    iaa.ContrastNormalization((0.3, 1.5)),
 ], random_order=True)  # apply augmenters in random order
 
 
