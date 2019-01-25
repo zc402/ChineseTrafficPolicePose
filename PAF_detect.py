@@ -202,7 +202,7 @@ class SaveFeatures:
         video_name, _ = os.path.splitext(video_name)
         save_path = os.path.join(pa.RNN_SAVED_JOINTS_FOLDER, video_name+".npy")
         np.save(save_path, people_joints)
-        print("Video file %d parsed and saved!" % video)
+        print("Video file %s parsed and saved!" % video)
 
     def parse_save_mp4_files(self, folder):
         wildcard_path = os.path.join(folder, "*.mp4")
