@@ -37,7 +37,7 @@ class VideoToTempFile:
             self.num_frame = self.num_frame + 1
 
             if self.num_frame % 5 == 0:
-                thumbnail = cv2.resize(frame, (150, 150))
+                thumbnail = cv2.resize(frame, (200, 200))
                 savedir = "%d.png" % self.num_frame
                 savedir = os.path.join(THUMBNAIL_PATH, savedir)
                 cv2.imwrite(savedir, thumbnail)
