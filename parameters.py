@@ -16,12 +16,14 @@ GAUSSIAN_VAR = 1.1  # Variance for 2D gaussian
 TRAIN_FOLDER = "/media/zc/Ext4-1TB/AI_challenger_keypoint"
 RNN_SAVED_JOINTS_FOLDER = "./dataset/gen/rnn_saved_joints"
 VIDEO_FOLDER_PATH = "dataset/policepose_video"
+RNN_TRAIN_FOLDER = "dataset/rnn_train_videos"
 SUBTITLE_DELAY_FRAMES = 12
 RNN_HIDDEN_UNITS = 32
 PCM2JOINT_THRESHOLD = 0.1  # Threshold for converting pcms to joint coordinates. Otherwise coor = -1.
 NUM_PCMs = 14
 NUM_PAFs = 11 * 2
 RES_IMG_WH = 512
+LABEL_DELAY_FRAMES = 15
 # Training Video List
 VIDEO_LIST = None
 # Add all videos with name train*.mp4 as training video

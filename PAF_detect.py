@@ -175,7 +175,7 @@ class ShowResults:
 class SaveFeatures:
     def save_joint_percent_values(self, video):
         detector = PAF_detect()
-        people_joints = []
+        frame_joints = []
         cap = cv2.VideoCapture(video)
         if not cap.isOpened():
             raise FileNotFoundError("%s can't be opened by OpenCV" % video)
@@ -192,16 +192,16 @@ class SaveFeatures:
             frame = cv2.resize(frame, (pa.PW, pa.PH))
             frame = frame.astype(np.float32)
             frame = frame / 255.
-            percent_joints = detector.detect_np_pic(frame)
-            people_joints.append(percent_joints)
+            joints_xy = detector.detect_np_pic(frame)  # [Joint, xy]
+            frame_joints.append(joints_xy)
             print("Parsing frame %d of %d frames" % (current_frame, v_size))
         cap.release()
         detector.release()
-        people_joints = np.asarray(people_joints, dtype=np.float32)
+        frame_joints = np.asarray(frame_joints, dtype=np.float32)
         video_name = os.path.basename(video)
         video_name, _ = os.path.splitext(video_name)
         save_path = os.path.join(pa.RNN_SAVED_JOINTS_FOLDER, video_name+".npy")
-        np.save(save_path, people_joints)
+        np.save(save_path, frame_joints)
         print("Video file %s parsed and saved!" % video)
 
     def parse_save_mp4_files(self, folder):
