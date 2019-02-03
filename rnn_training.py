@@ -47,22 +47,18 @@ def print_log(loss_num, g_step_num, lr_num, itr):
 
 def main(argv=None):
 
-    BATCH_SIZE = 256
+    BATCH_SIZE = 64
     TIME_STEP = 15 * 90
-    NUM_CLASSES = 9  # 8 classes + 1 for no move
-    NUM_JOINTS = 8
+    NUM_GESTURE_CLASSES = 9  # 8 classes + 1 for no move
 
-    # batch_time_joint_holder:
-    btjh = tf.placeholder(tf.float32, [BATCH_SIZE, TIME_STEP, NUM_JOINTS, 2])  # 2:xy
+    # batch_time_feature holder:
+    tf_btf = tf.placeholder(tf.float32, [BATCH_SIZE, TIME_STEP, 30])  # 10 length + 20 angle
     # batch_time label(classes) holder
-    btlh = tf.placeholder(tf.int32, [BATCH_SIZE, TIME_STEP])
+    tf_btl = tf.placeholder(tf.int32, [BATCH_SIZE, TIME_STEP])
     with tf.variable_scope("rnn-net"):
         # b t c(0/1)
-        btl_onehot = tf.one_hot(btlh, NUM_CLASSES, axis=-1)
-        img_j_xy = tf.reshape(btjh, [-1, NUM_JOINTS, 2])
-        img_fe = rnn_network.extract_features_from_joints(img_j_xy)
-        btf = tf.reshape(img_fe, [BATCH_SIZE, TIME_STEP, -1])
-        pred, state = rnn_network.build_rnn_network(btf, NUM_CLASSES, training=True)
+        btl_onehot = tf.one_hot(tf_btl, NUM_GESTURE_CLASSES, axis=-1)
+        pred, state = rnn_network.build_rnn_network(tf_btf, NUM_GESTURE_CLASSES, training=True)
         loss = rnn_network.build_rnn_loss(pred, btl_onehot)
         lgdts_tensor = build_training_ops(loss)
 
@@ -88,10 +84,12 @@ def main(argv=None):
 
     print("Training with batch size:"+str(BATCH_SIZE))
     # Load joint pos
-    jgen = video_utils.random_btj_btl_gen(BATCH_SIZE, TIME_STEP)
+
     for itr in range(1, int(4e4)):
-        btj, btl = next(jgen)
-        feed_dict = {btjh: btj, btlh: btl}
+
+        btjc, btl = video_utils.random_btjc_btl(BATCH_SIZE, TIME_STEP)
+        btf = rnn_network.extract_bone_length_joint_angle(btjc)
+        feed_dict = {tf_btl: btl, tf_btf: btf}
         loss_num, g_step_num, lr_num, train_op = sess.run(
             lgdts_tensor[0:4], feed_dict=feed_dict)
         print_log(loss_num, g_step_num, lr_num, itr)

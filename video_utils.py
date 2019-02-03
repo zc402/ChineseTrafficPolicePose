@@ -4,10 +4,10 @@ import glob
 import sys
 import parameters as pa
 import PAF_network
+import random
 import numpy as np
 import os
 import cv2
-from skimage.draw import line_aa
 
 
 assert sys.version_info >= (3, 5)
@@ -28,6 +28,7 @@ def load_label(csv_file):
     # Labels is a list of int, representing gesture for each frame
     return labels
 
+# Clip video and label, currently not used.
 def random_video_clip(video, csv_file, frame_length):
     labels = load_label(csv_file)
     labels = np.array(labels, dtype=np.int64)
@@ -57,15 +58,24 @@ def random_video_clip(video, csv_file, frame_length):
     labels = labels[start_ind: start_ind + frame_length]
     return labels, frames
 
-def random_joints_clip(npy_joints, csv_file, frame_length)
-    labels = load_label(csv_file)
+def random_joints_clip(npy_joints, label_file, clip_length):
+    """
+
+    :param npy_joints:  # feature sequence
+    :param label_file:  # csv labels
+    :param clip_length:  # clip frame length
+    :return:
+    """
+    labels = load_label(label_file)
     v_size = len(labels)
     labels = np.array(labels, dtype=np.int64)
-    start_ind = np.random.uniform(0, int(v_size-frame_length-1))
-    labels_cut = labels[start_ind:start_ind+frame_length]
+    start_ind = np.random.randint(0, int(v_size - clip_length - 1))
+    labels_cut = labels[start_ind:start_ind + clip_length]
     
     joints = np.load(npy_joints)
-    joints_cut = joints[start_ind:start_ind+frame_length]
+    j_size = joints.shape[0]
+    assert v_size == j_size
+    joints_cut = joints[start_ind:start_ind + clip_length]
     return labels_cut, joints_cut
 
 def labels_delay(labels, delay_frames):
@@ -81,20 +91,24 @@ def random_btjc_btl(batch_size, time_steps):
     Load joint pos with labels at random time
     :param batch_size:
     :param time_steps:
-    :return:
+    :return: label, features
     """
 
-    csv_list = glob.glob(os.path.join(pa.RNN_TRAIN_FOLDER, "*.csv"))
-    list.shuffle(csv_list)
+    csv_list = glob.glob(os.path.join(pa.LABEL_CSV_FOLDER_TRAIN, "*.csv"))
 
-    btjc = []
+    btjc = []  # batch time joint coordinate
     btl = []
     for b in range(batch_size):
-        video = csv_list[b].replace(".csv", ".mp4")
-        ls, fs = random_video_clip(video, csv_list[b], time_steps)
-        ls = labels_delay(ls, pa.LABEL_DELAY_FRAMES)
-        btl.append(ls)
-        btjc.append(fs)
+        label_path = random.choice(csv_list)  # /home/zc/po../<labels>/001.csv
+        base_name = os.path.basename(label_path).replace(".csv", ".npy")  # 001.npy
+        feature_path = os.path.join(pa.RNN_SAVED_JOINTS_FOLDER, base_name)  # /home/zc/po.../<joints>/001.npy
+        labels_cut, joints_cut = random_joints_clip(feature_path, label_path, time_steps)
+        labels_cut = labels_delay(labels_cut, pa.LABEL_DELAY_FRAMES)
+
+        btl.append(labels_cut)
+        btjc.append(joints_cut)
+
+    return np.asarray(btjc), np.asarray(btl)
 
 
 
