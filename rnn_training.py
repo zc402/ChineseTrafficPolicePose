@@ -47,7 +47,7 @@ def print_log(loss_num, g_step_num, lr_num, itr):
 
 def main(argv=None):
 
-    BATCH_SIZE = 64
+    BATCH_SIZE = 4
     TIME_STEP = 15 * 90
     NUM_GESTURE_CLASSES = 9  # 8 classes + 1 for no move
 
@@ -55,10 +55,11 @@ def main(argv=None):
     tf_btf = tf.placeholder(tf.float32, [BATCH_SIZE, TIME_STEP, 30])  # 10 length + 20 angle
     # batch_time label(classes) holder
     tf_btl = tf.placeholder(tf.int32, [BATCH_SIZE, TIME_STEP])
+    tf_is_training = tf.placeholder(tf.bool)
     with tf.variable_scope("rnn-net"):
         # b t c(0/1)
         btl_onehot = tf.one_hot(tf_btl, NUM_GESTURE_CLASSES, axis=-1)
-        pred, state = rnn_network.build_rnn_network(tf_btf, NUM_GESTURE_CLASSES, training=True)
+        pred, state = rnn_network.build_rnn_network(tf_btf, NUM_GESTURE_CLASSES, training=tf_is_training)
         loss = rnn_network.build_rnn_loss(pred, btl_onehot)
         lgdts_tensor = build_training_ops(loss)
 
@@ -89,22 +90,26 @@ def main(argv=None):
 
         btjc, btl = video_utils.random_btjc_btl(BATCH_SIZE, TIME_STEP)
         btf = rnn_network.extract_bone_length_joint_angle(btjc)
-        feed_dict = {tf_btl: btl, tf_btf: btf}
+        feed_dict = {tf_btl: btl, tf_btf: btf, tf_is_training: True}
         loss_num, g_step_num, lr_num, train_op = sess.run(
             lgdts_tensor[0:4], feed_dict=feed_dict)
         print_log(loss_num, g_step_num, lr_num, itr)
 
         # Summary
-        if itr % 200 == 0:
+        if itr % 50 == 1:
+            btjc_test, btl_test = video_utils.random_btjc_btl(BATCH_SIZE, TIME_STEP, use_test_folder=True)
+            btf_test = rnn_network.extract_bone_length_joint_angle(btjc_test)
+            feed_dict_test = {tf_btl: btl_test, tf_btf: btf_test, tf_is_training: False}
             btc_pred_num, l_max_num, acc = sess.run(
                 [btc_pred_max, l_max, accuracy],
-                feed_dict=feed_dict)
+                feed_dict=feed_dict_test)
             print("pred:  "+str(btc_pred_num))
             print("label: "+str(l_max_num))
             print("accuracy: " + str(acc))
             # summary_str = sess.run(lgdts_tensor[4], feed_dict=feed_dict)
             # summary_writer.add_summary(summary_str, g_step_num)
 
+        if itr % 100 == 0:
             rnn_saver.save(sess, "rnn_logs/ckpt")
             print('Model Saved.')
 

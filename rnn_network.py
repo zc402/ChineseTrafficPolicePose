@@ -124,7 +124,7 @@ def extract_bone_length_joint_angle(btjc):
         tjc = btjc[i]
         time_feature = _extract_length_angle_from_sequence(tjc)
         batch_time_feature.append(time_feature)
-        print("Generating feature: %d / %d" % (i, batch_size))
+        print("Generating feature: %d / %d" % (i+1, batch_size))
     return np.asarray(batch_time_feature)
 
 

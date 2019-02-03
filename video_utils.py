@@ -86,15 +86,17 @@ def labels_delay(labels, delay_frames):
     return labels
 
 
-def random_btjc_btl(batch_size, time_steps):
+def random_btjc_btl(batch_size, time_steps, use_test_folder=False):
     """
     Load joint pos with labels at random time
     :param batch_size:
     :param time_steps:
     :return: label, features
     """
-
-    csv_list = glob.glob(os.path.join(pa.LABEL_CSV_FOLDER_TRAIN, "*.csv"))
+    if use_test_folder:
+        csv_list = glob.glob(os.path.join(pa.LABEL_CSV_FOLDER_TEST, "*.csv"))
+    else:
+        csv_list = glob.glob(os.path.join(pa.LABEL_CSV_FOLDER_TRAIN, "*.csv"))
 
     btjc = []  # batch time joint coordinate
     btl = []

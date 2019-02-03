@@ -18,6 +18,8 @@ RNN_SAVED_JOINTS_FOLDER = "./dataset/gen/rnn_saved_joints"
 VIDEO_FOLDER_PATH = "dataset/policepose_video"
 # RNN_TRAIN_FOLDER = "dataset/rnn_train_videos"
 LABEL_CSV_FOLDER_TRAIN = "dataset/csv"  # Training label folder
+LABEL_CSV_FOLDER_TEST = "dataset/csv_test"  # Training label folder
+RNN_PREDICT_OUT_FOLDER = "dataset/rnn_out"  # Predicted labels folder
 RNN_HIDDEN_UNITS = 32  # Number of dense units in RNN
 PCM2JOINT_THRESHOLD = 0.1  # Threshold for converting pcms to joint coordinates. Otherwise coor = -1.
 NUM_PCMs = 14  # Number of PCMs
@@ -59,7 +61,7 @@ def create_necessary_folders():
     def create(directory):
         if not os.path.exists(directory):
             os.makedirs(directory)
-    dirs = ["./logs", "rnn_logs/", "./dataset/gen", LABEL_CSV_FOLDER,
+    dirs = ["./logs", "rnn_logs/", "./dataset/gen", LABEL_CSV_FOLDER_TRAIN, RNN_PREDICT_OUT_FOLDER,LABEL_CSV_FOLDER_TEST,
             VIDEO_FOLDER_PATH,
             RNN_SAVED_JOINTS_FOLDER]
     [create(d) for d in dirs]

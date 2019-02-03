@@ -104,7 +104,7 @@ def main(argv=None):
 
 
 # Enter main
-assert sys.version_info >= (3,5)
+assert sys.version_info >= (3, 5)
 if __name__ == "__main__":
     tf.app.run()
 exit(0)
