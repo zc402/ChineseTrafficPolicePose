@@ -1,3 +1,4 @@
+import glob
 import video_utils
 import tensorflow as tf
 import sys
@@ -6,6 +7,7 @@ import rnn_network
 import argparse
 import numpy as np
 import os
+import video_utils as vu
 
 def infer_npy(npy_path):
     tjc = np.load(npy_path)
@@ -50,12 +52,10 @@ def infer_npy(npy_path):
     btf = rnn_network.extract_bone_length_joint_angle(btjc)
     feed_dict = {tf_btf: btf}
 
-    bt_pred_num, l_max_num, acc = sess.run(
-        [bt_pred, l_max, accuracy],
+    bt_pred_num = sess.run(
+        bt_pred,
         feed_dict=feed_dict)
     print("pred:  " + str(bt_pred_num))
-    print("label: " + str(l_max_num))
-    print("accuracy: " + str(acc))
 
     sess.close()
 
@@ -77,9 +77,16 @@ def infer_npy(npy_path):
     save_path = os.path.join(pa.RNN_PREDICT_OUT_FOLDER, save_name)
     save_label(bt_pred_num[0], save_path)
 
+def predict_from_test_folder():
+    csv_list_test = glob.glob(os.path.join(pa.LABEL_CSV_FOLDER_TEST, "*.csv"))
+    feature_files_test = [os.path.basename(c).replace(".csv",".npy") for c in csv_list_test]
+    feature_paths_test = [os.path.join(pa.RNN_SAVED_JOINTS_FOLDER, f) for f in feature_files_test]
+    for npy_f in feature_paths_test:
+        print("predicting %s" % npy_f)
+        tf.reset_default_graph()
+        infer_npy(npy_f)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='detect gestures')
-    parser.add_argument("file", type=str, help="video path")
     args = parser.parse_args()
-    infer_npy(args.file)
+    predict_from_test_folder()
