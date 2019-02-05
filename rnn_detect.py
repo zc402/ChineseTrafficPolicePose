@@ -8,6 +8,8 @@ import argparse
 import numpy as np
 import os
 import video_utils as vu
+import metrics.edit_distance as ed
+import itertools
 
 def infer_npy(npy_path):
     tjc = np.load(npy_path)
@@ -86,7 +88,29 @@ def predict_from_test_folder():
         tf.reset_default_graph()
         infer_npy(npy_f)
 
+def run_edit_distance_on_predict_out():
+    labels = glob.glob(os.path.join(pa.LABEL_CSV_FOLDER_TEST, "*.csv"))
+    for label in labels:
+        pred_name = os.path.basename(label)
+        pred_path = os.path.join(pa.RNN_PREDICT_OUT_FOLDER, pred_name)
+        # label: ground truth path
+        # pred_path: predicted gestures path
+        gt_label = vu.load_label(label)
+        pred_label = vu.load_label(pred_path)
+        pred_label = pred_label[pa.LABEL_DELAY_FRAMES:]  # Detection not stable at first few frames
+        gt_group = itertools.groupby(gt_label)
+        gt_group = [k for k, g in gt_group]
+        # print(gt_group)
+        pred_group = itertools.groupby(pred_label)
+        pred_group = [k for k, g in pred_group]
+        # print(pred_group)
+        S, D, I = ed.SDI(pred_group, gt_group)
+        N = len(gt_group)
+        print("%s - N:%d S:%d, D:%d, I:%d" % (pred_name, N, S, D, I))
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='detect gestures')
+    
     args = parser.parse_args()
-    predict_from_test_folder()
+    # predict_from_test_folder()
+    run_edit_distance_on_predict_out()
