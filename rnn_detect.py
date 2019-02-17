@@ -42,9 +42,9 @@ def infer_npy(npy_path):
     # model evaluation
     btc_pred = tf.transpose(pred, [1, 0, 2])  # TBC to BTC
     bt_pred = tf.argmax(btc_pred, 2)
-    l_max = tf.argmax(btl_onehot, 2)
+    # l_max = tf.argmax(btl_onehot, 2)
     correct_prediction = tf.equal(tf.argmax(btc_pred, 2), tf.argmax(btl_onehot, 2))
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    # accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
     print("Training with batch size:" + str(BATCH_SIZE))
     # Load joint pos
@@ -90,6 +90,7 @@ def predict_from_test_folder():
 
 def run_edit_distance_on_predict_out():
     labels = glob.glob(os.path.join(pa.LABEL_CSV_FOLDER_TEST, "*.csv"))
+    sum_n, sum_i, sum_d, sum_s = 0, 0, 0, 0
     for label in labels:
         pred_name = os.path.basename(label)
         pred_path = os.path.join(pa.RNN_PREDICT_OUT_FOLDER, pred_name)
@@ -100,17 +101,29 @@ def run_edit_distance_on_predict_out():
         pred_label = pred_label[pa.LABEL_DELAY_FRAMES:]  # Detection not stable at first few frames
         gt_group = itertools.groupby(gt_label)
         gt_group = [k for k, g in gt_group]
-        # print(gt_group)
         pred_group = itertools.groupby(pred_label)
         pred_group = [k for k, g in pred_group]
-        # print(pred_group)
         S, D, I = ed.SDI(pred_group, gt_group)
         N = len(gt_group)
-        print("%s - N:%d S:%d, D:%d, I:%d" % (pred_name, N, S, D, I))
+        acc = (N - I - D - S) / N
+        print("%s - N:%d S:%d, D:%d, I:%d, ACC:%.4f" % (pred_name, N, S, D, I, acc))
+        # Sum 
+        sum_n = sum_n + N
+        sum_i = sum_i + I
+        sum_d = sum_d + D
+        sum_s = sum_s + S
+    sum_acc = (sum_n-sum_i-sum_d-sum_s) / sum_n
+    print("OVERALL - N:%d S:%d, D:%d, I:%d, ACC:%.4f" % (sum_n, sum_s, sum_d, sum_i, sum_acc))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='detect gestures')
+    parser.add_argument("-p", help="Predict videos from test folder", default=False, action="store_true")
+    parser.add_argument("-e", help="Compute Edit Distance of predicted labels and ground truth labels", default=False, action="store_true")
     
     args = parser.parse_args()
-    # predict_from_test_folder()
-    run_edit_distance_on_predict_out()
+    if args.p:
+        predict_from_test_folder()
+    elif args.e:
+        run_edit_distance_on_predict_out()
+    else:
+        print("Please specify an argument.")

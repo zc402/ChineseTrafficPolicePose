@@ -9,9 +9,22 @@ ChineseTrafficPolicePose is a network that classify
 - [Frame by frame detection - Youtube Video](https://youtu.be/DmKFpD1K7gQ)
 - [Realtime detection - Youtube Video](https://youtu.be/EjHp2RPuZqc)
 
+**Dataset**
+
+We publish a Traffic Police Gesture dataset at
+
+
+
 **Environment**
-- Tested on Ubuntu 16.04 with laptop GPU gtx980m.
+- Only support `Python3`
+- Use `Tensorflow` with GPU support
 - There must be **only one person** inside the video. Multiperson support is under developing.
+
+**Training**
+- Download keypoint dataset from AI Challenger.
+- Extract downloaded dataset to `parameters.TRAIN_FOLDER`.
+- Run `python3 PAF_train.py` to train keypoint network
+- Download our **Traffic Police Gesture** dataset according to **Dataset** section.
 
 **Quick Start**
 - Download model file: [model - Jianguoyun](https://www.jianguoyun.com/p/DTxk84UQ9_LMBhiN1VU), extract and place 2 folders to policepose/logs and policepose/rnn_logs accrodingly.
