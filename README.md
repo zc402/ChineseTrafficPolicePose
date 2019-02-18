@@ -5,6 +5,11 @@ ChineseTrafficPolicePose is a network that classify
     <img src="doc/media/real-time.gif", width="480">
 </p>
 
+# Police Gesture Dataset
+We release the Police Gesture Dataset, which contains the videos of Chinese traffic police commanding gestures, and ground truth gesture labels for each video frame.
+
+Download link: [Google Drive](https://drive.google.com/drive/folders/13KHZpweTE1vRGAMF7wqMDE35kDw40Uym?usp=sharing)
+# Police Gesture Recognizer
 **Watch Videos**:
 - [Frame by frame detection - Youtube Video](https://youtu.be/DmKFpD1K7gQ)
 - [Realtime detection - Youtube Video](https://youtu.be/EjHp2RPuZqc)
