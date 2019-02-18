@@ -3,10 +3,6 @@ ChineseTrafficPolicePose is a network that classify
 
 ChineseTrafficPolicePose 是一个仅依靠视觉信息区分８种中国交警指挥手势的网络
 
-<p align="center">
-    <img src="doc/media/real-time.gif", width="480">
-</p>
-
 # Police Gesture Dataset
 We publish the **Police Gesture Dataset**, which contains the videos of Chinese traffic police commanding gestures, and ground truth gesture labels for each video frame.
 
@@ -14,11 +10,15 @@ Police Gesture Dataset Download link: [Google Drive](https://drive.google.com/dr
 
 # Police Gesture Recognizer
 
+**Notice: This gif is outdated. current version support prediction for FULL BODY, include legs. Check the videos in our dataset for examples of supported videos.**
+
+<p align="center">
+    <img src="doc/media/real-time.gif", width="480">
+</p>
+
 **Watch Videos**:
 - [Frame by frame detection - Youtube Video](https://youtu.be/DmKFpD1K7gQ)
 - [Realtime detection - Youtube Video](https://youtu.be/EjHp2RPuZqc)
-
-
 
 **Environment**
 - Only support `Python3`
