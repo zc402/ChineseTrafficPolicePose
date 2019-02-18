@@ -6,6 +6,8 @@ class DPMemorizedDistance:
     # Order for edit distance: S,D,I
     def edit_distance(self, word1, word2):
         # Wrapper for _edit_distance with empty computed_solutions
+        word1 = tuple(word1)
+        word2 = tuple(word2)
         return self._edit_distance(word1, word2, {})
 
     def _edit_distance(self, word1, word2, computed_solutions):

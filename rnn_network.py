@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.contrib import rnn
 import parameters as pa
-
+import numpy as np
 
 def build_rnn_network(batch_time_input, n_classes, training, previous_states=None):
     """
@@ -15,7 +15,7 @@ def build_rnn_network(batch_time_input, n_classes, training, previous_states=Non
     num_units = pa.RNN_HIDDEN_UNITS
     # list [time_step][batch, n_classes]
     input_list = tf.unstack(batch_time_input, axis=1)
-    lstm_layer = rnn.BasicLSTMCell(num_units=num_units)
+    lstm_layer = tf.nn.rnn_cell.LSTMCell(num_units=num_units)
     print(lstm_layer.state_size)
     # outputs: list [time_step][batch, n_units]
     lstm_outputs, last_states = rnn.static_rnn(
@@ -57,8 +57,75 @@ def build_rnn_loss(lstm_prediction_list, batch_time_class_label):
             logits=lstm_prediction_list[i], labels=t_bc_label_list[i])
         time_batch_loss_list.append(time_batch_loss)
     # Do not compute the loss at the beginning of video
-    loss = tf.reduce_mean(time_batch_loss_list[pa.SUBTITLE_DELAY_FRAMES:])
+    loss = tf.reduce_mean(time_batch_loss_list[pa.LABEL_DELAY_FRAMES:])
     return loss
+
+
+def _extract_length_angle_from_sequence(tjc):
+    tjc = np.asarray(tjc)
+    v_len = tjc.shape[0]
+    assert v_len > 0
+
+    time_feature = []
+    for time in range(v_len):
+        features_list = []
+        joint_coor = tjc[time]  # jc for 1 frame, contains all joint positions
+        def occluded(b1, b2):
+            if np.less(joint_coor[b1, :], 0).any() or np.less(joint_coor[b2, :], 0).any():  # At least 1 part is not visible
+                return True
+        # Head
+        head_b1, head_b2 = pa.bones_head[0]
+        if occluded(head_b1, head_b2):
+            # Head occluded
+            head_norm = 1.
+        else:
+            head_norm = np.linalg.norm(joint_coor[head_b1, :] - joint_coor[head_b2, :]) + 1e-7
+
+        # Body
+        list_bone_length = []
+        list_joint_angle = []
+        for b_num, (b1, b2) in enumerate(pa.bones_body):
+            coor1 = joint_coor[b1, :]
+            coor2 = joint_coor[b2, :]
+            # At least 1 part is not visible
+            if occluded(b1, b2):
+                # bone length for (b1, b2) = 0
+                # joint angle for (b1, b2) = (sin)0, (cos)0
+                list_bone_length.append(0)
+                list_joint_angle.append(0)
+                list_joint_angle.append(0)
+            else:  # Both parts are visible
+                bone_vec = coor1 - coor2
+                bone_norm = np.linalg.norm(bone_vec) + 1e-7
+                bone_cross = np.cross(bone_vec, (0, 1))
+                bone_dot = np.dot(bone_vec, (0, 1))
+                bone_sin = np.true_divide(bone_cross, bone_norm)
+                bone_cos = np.true_divide(bone_dot, bone_norm)
+                # wrt_h : With respect to head length
+                len_wrt_h = np.true_divide(bone_norm, head_norm)
+                list_bone_length.append(len_wrt_h)
+                list_joint_angle.append(bone_sin)
+                list_joint_angle.append(bone_cos)
+        features_list.extend(list_bone_length)
+        features_list.extend(list_joint_angle)
+        time_feature.append(features_list)
+    return np.asarray(time_feature)
+
+
+def extract_bone_length_joint_angle(btjc):
+    """
+    Produce batch_time_feature array
+    :param btjc:
+    :return:
+    """
+    batch_size = btjc.shape[0]
+    batch_time_feature = []
+    for i in range(batch_size):
+        tjc = btjc[i]
+        time_feature = _extract_length_angle_from_sequence(tjc)
+        batch_time_feature.append(time_feature)
+        print("Generating feature: %d / %d" % (i+1, batch_size))
+    return np.asarray(batch_time_feature)
 
 
 def extract_features_from_joints(joint_tensor):
