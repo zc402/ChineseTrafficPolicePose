@@ -1,38 +1,38 @@
 ChineseTrafficPolicePose is a network that classify
 **8 kinds of Chinese traffic police commanding poses** by analyzing visual information.
-</br>ChineseTrafficPolicePose 是一个仅依靠视觉信息区分８种中国交警指挥手势的网络
+
+ChineseTrafficPolicePose 是一个仅依靠视觉信息区分８种中国交警指挥手势的网络
+
 <p align="center">
     <img src="doc/media/real-time.gif", width="480">
 </p>
 
 # Police Gesture Dataset
-We release the Police Gesture Dataset, which contains the videos of Chinese traffic police commanding gestures, and ground truth gesture labels for each video frame.
+We publish the **Police Gesture Dataset**, which contains the videos of Chinese traffic police commanding gestures, and ground truth gesture labels for each video frame.
 
-Download link: [Google Drive](https://drive.google.com/drive/folders/13KHZpweTE1vRGAMF7wqMDE35kDw40Uym?usp=sharing)
+Police Gesture Dataset Download link: [Google Drive](https://drive.google.com/drive/folders/13KHZpweTE1vRGAMF7wqMDE35kDw40Uym?usp=sharing)
+
 # Police Gesture Recognizer
+
 **Watch Videos**:
 - [Frame by frame detection - Youtube Video](https://youtu.be/DmKFpD1K7gQ)
 - [Realtime detection - Youtube Video](https://youtu.be/EjHp2RPuZqc)
-
-**Dataset**
-
-We publish a Traffic Police Gesture dataset at
 
 
 
 **Environment**
 - Only support `Python3`
 - Use `Tensorflow` with GPU support
-- There must be **only one person** inside the video. Multiperson support is under developing.
 
 **Training**
-- Download keypoint dataset from AI Challenger.
-- Extract downloaded dataset to `parameters.TRAIN_FOLDER`.
-- Run `python3 PAF_train.py` to train keypoint network
-- Download our **Traffic Police Gesture** dataset according to **Dataset** section.
-
-**Quick Start**
-- Download model file: [model - Jianguoyun](https://www.jianguoyun.com/p/DTxk84UQ9_LMBhiN1VU), extract and place 2 folders to policepose/logs and policepose/rnn_logs accrodingly.
-- Run <code>python3 evaluate.py</code> to test on laptop camera.
-- To use OpenCV camera with python3, you might need to compile OpenCV from source.
-
+- Download keypoint dataset from AI Challenger (~20GB).
+- Rename the downloaded 4 folders to `"train", "test_a", "test_b", "val"`.
+- Extract downloaded dataset to `parameters.TRAIN_FOLDER`. You may change the content of this parameter according to your path.
+- Run `python3 PAF_train.py` to train the keypoint network.
+- Download our **Traffic Police Gesture** dataset (~2GB) according to **Dataset** section.
+- Extract .csv files to `dataset/csv_train` and `dataset/csv_test`.
+- Extract .mp4 files to `dataset/policepose_video`.
+- Run `python3 PAF_detect dataset/policepose_video -a` to parse videos to skeletal data.
+- Run `python3 rnn_train` to train LSTM using labels from `dataset/csv_train` and skeletal data from `./dataset/gen/rnn_saved_joints`.
+- Run `python3 rnn_detect -p` to predict test videos using name list from `dataset/csv_test` and skeletal data from `./dataset/gen/rnn_saved_joints`.
+- Run `Python3 rnn_detect -e` to print **Edit Distance** of predicted labels with ground truth labels from  `dataset/csv_test`.
