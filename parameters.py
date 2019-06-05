@@ -13,13 +13,14 @@ HEAT_SIZE = (HEAT_W, HEAT_H)  # A tuple of heatmap size
 MAX_ALLOWED_PEOPLE = 4  # Pictures with more people will be ignored in training
 GAUSSIAN_VAR = 1.1  # Variance for 2D gaussian
 
-TRAIN_FOLDER = "/media/zc/Ext4-1TB/AI_challenger_keypoint"
+TRAIN_FOLDER = "/media/zc/Ext4-1TB/AI_challenger_keypoint"  # PAF Train folder
 RNN_SAVED_JOINTS_FOLDER = "./dataset/gen/rnn_saved_joints"
 VIDEO_FOLDER_PATH = "dataset/policepose_video"
 # RNN_TRAIN_FOLDER = "dataset/rnn_train_videos"
 LABEL_CSV_FOLDER_TRAIN = "dataset/csv_train"  # Training label folder
-LABEL_CSV_FOLDER_TEST = "dataset/csv_test"  # Training label folder
+LABEL_CSV_FOLDER_TEST = "dataset/csv_test"  # Test label folder
 RNN_PREDICT_OUT_FOLDER = "dataset/rnn_out"  # Predicted labels folder
+SUBTITLE_VIDEO_FOLDER = "dataset/subtitle_video"  # Video with subtitle embedded
 RNN_HIDDEN_UNITS = 32  # Number of dense units in RNN
 PCM2JOINT_THRESHOLD = 0.1  # Threshold for converting pcms to joint coordinates. Otherwise coor = -1.
 NUM_PCMs = 14  # Number of PCMs
@@ -63,8 +64,8 @@ def create_necessary_folders():
             os.makedirs(directory)
     dirs = ["./logs", "rnn_logs/", "./dataset/gen", LABEL_CSV_FOLDER_TRAIN, RNN_PREDICT_OUT_FOLDER,LABEL_CSV_FOLDER_TEST,
             VIDEO_FOLDER_PATH,
-            RNN_SAVED_JOINTS_FOLDER]
+            RNN_SAVED_JOINTS_FOLDER,SUBTITLE_VIDEO_FOLDER]
     [create(d) for d in dirs]
 
-if __name__ == "__main__":
-    create_necessary_folders()
+# if __name__ == "__main__":
+create_necessary_folders()
