@@ -267,6 +267,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("video", type=str, help="video file to be annotated")
     parser.add_argument("csv", type=str, help="csv file")
+    parser.add_argument("-s", type=int, help="square image size(not implemented)", default=20)
     args = parser.parse_args()
     if not os.path.exists(args.video):
         raise FileNotFoundError()

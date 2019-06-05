@@ -32,7 +32,7 @@ Police Gesture Dataset Download link: [Google Drive](https://drive.google.com/dr
 - Download our **Traffic Police Gesture** dataset (~2GB) according to **Dataset** section.
 - Extract .csv files to `dataset/csv_train` and `dataset/csv_test`.
 - Extract .mp4 files to `dataset/policepose_video`.
-- Run `python3 PAF_detect dataset/policepose_video -a` to parse videos to skeletal data.
-- Run `python3 rnn_train` to train LSTM using labels from `dataset/csv_train` and skeletal data from `./dataset/gen/rnn_saved_joints`.
-- Run `python3 rnn_detect -p` to predict test videos using name list from `dataset/csv_test` and skeletal data from `./dataset/gen/rnn_saved_joints`.
-- Run `Python3 rnn_detect -e` to print **Edit Distance** of predicted labels with ground truth labels from  `dataset/csv_test`.
+- Run `python3 PAF_detect.py dataset/policepose_video -a` to parse videos to skeletal data.
+- Run `python3 rnn_train.py` to train LSTM using labels from `dataset/csv_train` and skeletal data from `./dataset/gen/rnn_saved_joints`.
+- Run `python3 rnn_detect.py -p` to predict test videos using name list from `dataset/csv_test` and skeletal data from `./dataset/gen/rnn_saved_joints`.
+- Run `Python3 rnn_detect.py -e` to print **Edit Distance** of predicted labels with ground truth labels from  `dataset/csv_test`.

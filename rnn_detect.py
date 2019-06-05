@@ -115,6 +115,9 @@ def run_edit_distance_on_predict_out():
     sum_acc = (sum_n-sum_i-sum_d-sum_s) / sum_n
     print("OVERALL - N:%d S:%d, D:%d, I:%d, ACC:%.4f" % (sum_n, sum_s, sum_d, sum_i, sum_acc))
 
+def play_predicted_result(name):
+    pass
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='detect gestures')
     parser.add_argument("-p", help="Predict videos from test folder", default=False, action="store_true")
