@@ -3,6 +3,9 @@ ChineseTrafficPolicePose is a network that classify
 
 ChineseTrafficPolicePose 是一个仅依靠视觉信息区分８种中国交警指挥手势的网络
 
+# Paper Available Online 19 October 2019
+https://doi.org/10.1016/j.neucom.2019.07.103
+
 # Police Gesture Dataset
 We publish the **Police Gesture Dataset**, which contains the videos of Chinese traffic police commanding gestures, and ground truth gesture labels for each video frame.
 
