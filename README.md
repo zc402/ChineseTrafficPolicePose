@@ -3,20 +3,29 @@ ChineseTrafficPolicePose is a network that classify
 
 ChineseTrafficPolicePose 是一个仅依靠视觉信息区分８种中国交警指挥手势的网络
 
-# Paper Available Online 19 October 2019
+# This version is Deprecated! 这个版本不推荐使用！
+This code runs under tensorflow 1.4, it's hard to build now because Tensorflow has changed it's API a lot. A pytorch version of police gesture recognizer is being maintained with **pretrained models available** at:
+
+基于pytorch的、有预训练模型的版本：
+
+### **https://github.com/zc402/ctpgr-pytorch**
+
+-----------------
+### Following instructions are deprecated. It's used to support the paper:
+### 以下代码已废弃，仅为论文提供支撑材料：
 https://doi.org/10.1016/j.neucom.2019.07.103
 
-# Police Gesture Dataset
+### Police Gesture Dataset
 We publish the **Police Gesture Dataset**, which contains the videos of Chinese traffic police commanding gestures, and ground truth gesture labels for each video frame.
 
 Police Gesture Dataset Download link: [Google Drive](https://drive.google.com/drive/folders/13KHZpweTE1vRGAMF7wqMDE35kDw40Uym?usp=sharing)
 
-# Police Gesture Recognizer
+### Police Gesture Recognizer
 
 **Notice: This gif is outdated. current version support prediction for FULL BODY, include legs. Check the videos in our dataset for examples of supported videos.**
 
 <p align="center">
-    <img src="doc/media/real-time.gif", width="480">
+    <img src="doc/media/real-time.gif" width="480">
 </p>
 
 **Watch Videos**:
